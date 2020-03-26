@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+
+if [[ -r "$1" ]]; then
+  data="$(<"$1")"
+else
+  data="$1"
+fi
+
+( set -x ; poetry run python3 functions/runtask.py "$data" )

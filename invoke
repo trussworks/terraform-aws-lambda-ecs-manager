@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+if [[ -r "$1" ]]; then
+  payload="$(<"$1")"
+else
+  payload="$1"
+fi
+function_name="$2"
+
+( set -x -u ; aws lambda invoke --function "$function_name" --payload "$payload" /dev/stdout )
