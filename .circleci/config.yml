@@ -1,0 +1,30 @@
+---
+version: 2.1
+jobs:
+  lint_and_test_python:
+    docker:
+      - image: python:3.7-buster
+    steps:
+      - checkout
+      - run:
+          name: Install build & test dependencies
+          command: |
+            pip3 install --progress-bar off 'poetry==1.0.5' 'pre-commit==2.2.0'
+            poetry config --no-interaction virtualenvs.create false
+      - run:
+          name: Build & install
+          command: poetry build && poetry install
+      - run:
+          name: Run pre-commit hooks on all files
+          command: pre-commit run --all-files --show-diff-on-failure
+      - run:
+          name: Run tests
+          command: |
+            poetry run pytest --full-trace
+      - store_artifacts:
+          path: dist
+workflows:
+  version: 2.1
+  pipeline:
+    jobs:
+      - lint_and_test_python
