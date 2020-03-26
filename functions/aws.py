@@ -60,4 +60,9 @@ class Boto3Result:
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
     """Call a function and return the response as a Boto3Result."""
-    pass
+    try:
+        r = boto3_function(**kwargs)
+    except Exception as exc:
+        return Boto3Result(exc=exc)
+    else:
+        return Boto3Result(response=r)
