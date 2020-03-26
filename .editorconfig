@@ -1,0 +1,30 @@
+# https://editorconfig.org/
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+
+[*.py]
+quote_type = double
+max_line_length = 79
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+skip = build,.tox,.venv
+balanced_wrapping = true
+not_skip = __init__.py
+
+[*.{rst,ini}]
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.tf]
+indent_size = 2
+
+[LICENSE]
+insert_final_newline = false

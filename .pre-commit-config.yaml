@@ -1,0 +1,79 @@
+---
+repos:
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+  - repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-docstring-first
+      - id: check-toml
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      - id: pyproject.toml
+        name: validate pyproject.toml
+        language: system
+        entry: poetry check
+        files: 'pyproject\.toml'
+        pass_filenames: false
+
+      - id: isort
+        name: isort
+        stages: [commit]
+        language: system
+        entry: poetry run isort
+        types: [python]
+
+      - id: black
+        name: black
+        stages: [commit]
+        language: system
+        entry: poetry run black
+        types: [python]
+
+      - id: flake8
+        name: flake8
+        stages: [commit]
+        language: system
+        entry: poetry run flake8
+        types: [python]
+
+      - id: mypy
+        name: mypy
+        stages: [commit]
+        language: system
+        entry: poetry run mypy
+        types: [python]
+
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v2.1.0
+    hooks:
+      - id: seed-isort-config
+
+  - repo: git://github.com/detailyang/pre-commit-shell
+    rev: 1.0.5
+    hooks:
+      - id: shell-lint
+
+  - repo: git://github.com/igorshubovych/markdownlint-cli
+    rev: v0.22.0
+    hooks:
+      - id: markdownlint
+
+  - repo: git://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.27.0
+    hooks:
+      - id: terraform_docs
+      - id: terraform_fmt
