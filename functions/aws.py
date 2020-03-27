@@ -39,7 +39,10 @@ class Boto3Result:
         else:
             self.status = None
 
-        self.body: Dict[str, Any] = response or {}
+        self.body: Dict[str, Any] = {
+            "status": self.status,
+            "response": response or {},
+        }
         self.exc: Optional[Exception] = exc
         self.error: Dict[str, Any] = self._get_error_msg()
 
