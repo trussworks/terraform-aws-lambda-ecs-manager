@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 """boto3 response manager."""
 import traceback
 import types
