@@ -1,5 +1,6 @@
 [run]
 branch = true
+omit= */__init__.py
 
 [report]
 show_missing = true
