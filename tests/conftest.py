@@ -43,6 +43,11 @@ def test_exception_raiser():
 
 
 @_pytest.fixture
+def botoresult():
+    return Boto3Result
+
+
+@_pytest.fixture
 def result_with_body():
     return Boto3Result(
         response={"ResponseMetadata": {"HTTPStatusCode": "200"}, "foo": "bar"}
