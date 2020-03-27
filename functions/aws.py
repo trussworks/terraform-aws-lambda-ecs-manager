@@ -41,9 +41,9 @@ class Boto3Result:
         else:
             self.status = None
 
-        self.body = response
-        self.exc = exc
-        self.error = self._get_error_msg()
+        self.body: Dict[str, Any] = response or {}
+        self.exc: Optional[Exception] = exc
+        self.error: Dict[str, Any] = self._get_error_msg()
 
     def _get_error_msg(self) -> Dict[str, Any]:
         """Return the response stacktrace, if any."""

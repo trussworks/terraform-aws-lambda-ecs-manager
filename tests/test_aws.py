@@ -15,7 +15,7 @@ class TestBoto3Result:
         self, result_with_exception, test_exception
     ):
         assert result_with_exception.status is None
-        assert result_with_exception.body is None
+        assert result_with_exception.body == {}
         assert isinstance(result_with_exception.exc, test_exception)
         assert isinstance(result_with_exception.error, dict)
         assert all(
