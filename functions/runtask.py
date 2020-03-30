@@ -91,7 +91,7 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
     except Exception as exc:
         return Boto3Result(exc=exc)
     else:
-        return Boto3Result(response=r)
+        return Boto3Result(response=r or {})
 
 
 def _generate_container_definition(
