@@ -74,7 +74,9 @@ class Boto3Result:
         if self.exc is None:
             return {}
 
-        tb = traceback.TracebackException.from_exception(self.exc)
+        tb = traceback.TracebackException.from_exception(
+            self.exc, capture_locals=True
+        )
         return {
             "title": type(self.exc).__name__,
             "message": str(self.exc),
