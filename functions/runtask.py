@@ -187,12 +187,40 @@ def _runtask(command: str) -> Boto3Result:
         return Boto3Result(exc=r.exc)
     log("Running task", new_task_arn)
 
+    # wait for the task to finish
+    r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
+    if r.exc:
+        return Boto3Result(exc=r.exc)
+    log("Finished waiting for task execution", new_task_arn)
+
     return Boto3Result(
         response={
             "taskArn": new_task_arn,
             "taskDefinitionArn": target_taskdef_arn,
         }
     )
+
+
+def _task_wait(
+    ecs: boto3.client,
+    cluster: str,
+    task_arn: str,
+    delay: int = 6,
+    attempts: int = 20,
+) -> Boto3Result:
+    waiter = ecs.get_waiter("tasks_stopped")
+    r = invoke(
+        waiter.wait,
+        **{
+            "cluster": cluster,
+            "tasks": [task_arn],
+            "WaiterConfig": {"Delay": delay, "MaxAttempts": attempts},
+        },
+    )
+    if r.exc:
+        return Boto3Result(exc=r.exc)
+    else:
+        return Boto3Result(response={})
 
 
 def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
