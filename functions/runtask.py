@@ -193,10 +193,34 @@ def _runtask(command: str) -> Boto3Result:
         return Boto3Result(exc=r.exc)
     log("Finished waiting for task execution", new_task_arn)
 
+    # inspect task result
+    r = invoke(
+        ecs.describe_tasks, **{"cluster": _cluster, "tasks": [new_task_arn]}
+    )
+    if r.exc:
+        return Boto3Result(exc=r.exc)
+    if r.body["failures"]:
+        return Boto3Result(
+            exc=Exception(
+                f"ecs.describeTask call returned errors on {new_task_arn}",
+                r.body["failures"],
+            )
+        )
+
+    task_description = r.body["tasks"][0]
+    container_description = task_description["containers"][0]
+    task_status = {
+        key: value
+        for key, value in task_description.items()
+        if key in ("stopCode", "stoppedReason", "startedBy", "taskArn")
+    }
+    task_status.update({"exitCode": container_description["exitCode"]})
+
     return Boto3Result(
         response={
             "taskArn": new_task_arn,
             "taskDefinitionArn": target_taskdef_arn,
+            "taskStatus": task_status,
         }
     )
 
