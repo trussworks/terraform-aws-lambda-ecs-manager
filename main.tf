@@ -24,7 +24,7 @@
 
 locals {
   service_name   = "ecs-runtask-${var.app_name}-${var.environment}"
-  log_group      = "/aws/lambda/${local.app_name}"
+  log_group      = "/aws/lambda/${var.app_name}"
   taskdef_family = "${var.app_name}-lambda-${var.environment}"
 }
 
@@ -46,7 +46,7 @@ resource "aws_lambda_function" "main" {
   role             = aws_iam_role.main.arn
   handler          = "deploy.lambda_handler"
   source_code_hash = data.archive_file.main.output_base64sha256
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   timeout          = 10
 
   environment {
