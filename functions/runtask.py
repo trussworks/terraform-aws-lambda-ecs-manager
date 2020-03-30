@@ -167,7 +167,7 @@ def _runtask(command: str) -> Boto3Result:
         if r.exc:
             return Boto3Result(exc=r.exc)
         target_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
-        log("Created task definition", target_taskdef_arn)
+        log(msg="Created task definition", data=target_taskdef_arn)
     else:
         target_taskdef_arn = svc_taskdef_arn
 
@@ -185,13 +185,13 @@ def _runtask(command: str) -> Boto3Result:
     new_task_arn = r.body["tasks"][0]["taskArn"]
     if r.exc:
         return Boto3Result(exc=r.exc)
-    log("Running task", new_task_arn)
+    log(msg="Running task", data=new_task_arn)
 
     # wait for the task to finish
     r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
     if r.exc:
         return Boto3Result(exc=r.exc)
-    log("Finished waiting for task execution", new_task_arn)
+    log(msg="Finished waiting for task execution", data=new_task_arn)
 
     # inspect task result
     r = invoke(
