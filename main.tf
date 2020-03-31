@@ -29,6 +29,21 @@ locals {
 }
 
 #
+# CloudWatch
+#
+
+resource "aws_cloudwatch_log_group" "main" {
+  name              = "${local.log_group}"
+  retention_in_days = "${var.logs_retention}"
+
+  tags = {
+    Name        = "${var.app_name}"
+    Environment = "${var.environment}"
+    Automation  = "Terraform"
+  }
+}
+
+#
 # IAM
 #
 
