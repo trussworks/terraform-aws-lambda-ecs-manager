@@ -109,7 +109,7 @@ def _generate_container_definition(
             new command for the container definition
 
     Raises:
-        Exception:
+        KeyError:
             if the container_name is not found in the taskdef
     """
     container_definiton: Dict[str, Any]
@@ -117,7 +117,7 @@ def _generate_container_definition(
         if container_definition["name"] == container_name:
             break
     else:
-        raise Exception(
+        raise KeyError(
             "Definition for container {} not found.".format(container_name)
         )
 
