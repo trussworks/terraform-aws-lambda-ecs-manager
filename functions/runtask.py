@@ -134,7 +134,6 @@ def _runtask(command: str) -> Boto3Result:
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
     _service = os.environ["ECS_SERVICE"]
-    _container_name = os.environ["ECS_CONTAINER"]
     taskdef_family = f"{_service}-lambda-{_environment}"
 
     ecs = boto3.client("ecs")
@@ -148,6 +147,7 @@ def _runtask(command: str) -> Boto3Result:
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
     if command:
+        _container_name = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
