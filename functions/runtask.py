@@ -265,7 +265,7 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
     response = {"request_payload": command}
 
     result = _runtask(command)
-    response.update(result.body or result.error)
+    response.update(result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
