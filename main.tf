@@ -64,9 +64,9 @@ resource "aws_iam_role" "main" {
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role.json}"
 }
 
-data "aws_arn" "task_arn" {
-  arn = "${var.task_role_arn}"
-}
+# data "aws_arn" "task_arn" {
+#   arn = "${var.task_role_arn}"
+# }
 
 data "aws_iam_policy_document" "main" {
   # allow writing cloudwatch logs
@@ -79,15 +79,15 @@ data "aws_iam_policy_document" "main" {
     resources = ["${aws_cloudwatch_log_group.main.arn}"]
   }
 
-  # allow the lambda to assume the task roles
-  statement {
-    actions = ["iam:PassRole"]
+  # # allow the lambda to assume the task roles
+  # statement {
+  #   actions = ["iam:PassRole"]
 
-    resources = [
-      "${var.task_role_arn}",
-      "${var.task_execution_role_arn}",
-    ]
-  }
+  #   resources = [
+  #     "${var.task_role_arn}",
+  #     "${var.task_execution_role_arn}",
+  #   ]
+  # }
 
   # allow reading ECS service details and creating task definitions
   # NOTE: these don't support resource level permissions
