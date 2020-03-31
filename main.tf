@@ -94,6 +94,7 @@ data "aws_iam_policy_document" "main" {
   #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-supported-iam-actions-resources.html
   statement {
     actions = [
+      "ecs:DescribeTasks",
       "ecs:DescribeServices",
       "ecs:DescribeTaskDefinition",
       "ecs:RegisterTaskDefinition",
