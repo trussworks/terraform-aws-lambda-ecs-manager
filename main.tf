@@ -44,7 +44,7 @@ resource "aws_lambda_function" "main" {
   description   = "Updates an ECS service"
 
   role             = aws_iam_role.main.arn
-  handler          = "deploy.lambda_handler"
+  handler          = "runtask.lambda_handler"
   source_code_hash = data.archive_file.main.output_base64sha256
   runtime          = "python3.7"
   timeout          = 10
