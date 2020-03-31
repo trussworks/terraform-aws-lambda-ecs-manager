@@ -199,6 +199,7 @@ def _runtask(command: str) -> Boto3Result:
     )
     if r.exc:
         return Boto3Result(exc=r.exc)
+
     if r.body["failures"]:
         return Boto3Result(
             exc=Exception(
@@ -272,6 +273,7 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
         msg="response received",
         data={"response": response, "duration": duration},
     )
+    sys.exit(result.body.get("taskStatus", {}).get("exitCode", 1))
 
 
 if __name__ == "__main__":
