@@ -191,7 +191,7 @@ def _runtask(command: str) -> Boto3Result:
             "taskDefinition": target_taskdef_arn,
             "launchType": "FARGATE",
             "networkConfiguration": netconf,
-            "startedBy": started_by,
+            "startedBy": "lambda",
         },
     )
     new_task_arn = r.body["tasks"][0]["taskArn"]
