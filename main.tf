@@ -29,6 +29,73 @@ locals {
 }
 
 #
+# IAM
+#
+
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "main" {
+  description        = "Allows Lambda functions to update ${local.taskdef_family} service container definitions."
+  name               = "lambda-${var.name}-${var.environment}"
+  assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role.json}"
+}
+
+data "aws_arn" "task_arn" {
+  arn = "${var.task_role_arn}"
+}
+
+data "aws_iam_policy_document" "main" {
+  # allow writing cloudwatch logs
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+
+    resources = ["${aws_cloudwatch_log_group.main.arn}"]
+  }
+
+  # allow the lambda to assume the task roles
+  statement {
+    actions = ["iam:PassRole"]
+
+    resources = [
+      "${var.task_role_arn}",
+      "${var.task_execution_role_arn}",
+    ]
+  }
+
+  # allow reading ECS service details and creating task definitions
+  # NOTE: these don't support resource level permissions
+  #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-supported-iam-actions-resources.html
+  statement {
+    actions = [
+      "ecs:DescribeServices",
+      "ecs:DescribeTaskDefinition",
+      "ecs:RegisterTaskDefinition",
+      "ecs:UpdateService",
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "main" {
+  name   = "lambda-ecs-deploy-${var.name}-${var.environment}-policy"
+  role   = "${aws_iam_role.main.name}"
+  policy = "${data.aws_iam_policy_document.main.json}"
+}
+
+#
 # Lambda
 #
 
