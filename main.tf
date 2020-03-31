@@ -33,12 +33,12 @@ locals {
 #
 
 resource "aws_cloudwatch_log_group" "main" {
-  name              = "${local.log_group}"
-  retention_in_days = "${var.logs_retention}"
+  name              = local.log_group
+  retention_in_days = var.logs_retention
 
   tags = {
-    Name        = "${var.app_name}"
-    Environment = "${var.environment}"
+    Name        = var.app_name
+    Environment = var.environment
     Automation  = "Terraform"
   }
 }
@@ -61,11 +61,11 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 resource "aws_iam_role" "main" {
   description        = "Allows Lambda functions to update ${local.taskdef_family} service container definitions."
   name               = "lambda-${var.app_name}-${var.environment}"
-  assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role.json}"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
 # data "aws_arn" "task_arn" {
-#   arn = "${var.task_role_arn}"
+#   arn = var.task_role_arn
 # }
 
 data "aws_iam_policy_document" "main" {
@@ -76,7 +76,7 @@ data "aws_iam_policy_document" "main" {
       "logs:PutLogEvents",
     ]
 
-    resources = ["${aws_cloudwatch_log_group.main.arn}"]
+    resources = [aws_cloudwatch_log_group.main.arn]
   }
 
   # # allow the lambda to assume the task roles
@@ -84,8 +84,8 @@ data "aws_iam_policy_document" "main" {
   #   actions = ["iam:PassRole"]
 
   #   resources = [
-  #     "${var.task_role_arn}",
-  #     "${var.task_execution_role_arn}",
+  #     var.task_role_arn,
+  #     var.task_execution_role_arn,
   #   ]
   # }
 
@@ -106,8 +106,8 @@ data "aws_iam_policy_document" "main" {
 
 resource "aws_iam_role_policy" "main" {
   name   = "lambda-ecs-runtask-${var.app_name}-${var.environment}-policy"
-  role   = "${aws_iam_role.main.name}"
-  policy = "${data.aws_iam_policy_document.main.json}"
+  role   = aws_iam_role.main.name
+  policy = data.aws_iam_policy_document.main.json
 }
 
 #
@@ -147,8 +147,8 @@ resource "aws_lambda_function" "main" {
   lifecycle {
     # ignore local filesystem differences
     ignore_changes = [
-      "filename",
-      "last_modified",
+      filename,
+      last_modified,
     ]
   }
 }
