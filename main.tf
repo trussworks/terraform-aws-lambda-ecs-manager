@@ -13,7 +13,7 @@
  * module "lambda_runtask" {
  *   source = "../../../modules/aws-lambda-runtask"
  *
- *   app_name    = var.name
+ *   app_name    = var.app_name
  *   environment = var.environment
  *
  *   task_role_arn           = module.ecs_service_app.task_role_arn
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 
 resource "aws_iam_role" "main" {
   description        = "Allows Lambda functions to update ${local.taskdef_family} service container definitions."
-  name               = "lambda-${var.name}-${var.environment}"
+  name               = "lambda-${var.app_name}-${var.environment}"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role.json}"
 }
 
@@ -90,7 +90,7 @@ data "aws_iam_policy_document" "main" {
 }
 
 resource "aws_iam_role_policy" "main" {
-  name   = "lambda-ecs-runtask-${var.name}-${var.environment}-policy"
+  name   = "lambda-ecs-runtask-${var.app_name}-${var.environment}-policy"
   role   = "${aws_iam_role.main.name}"
   policy = "${data.aws_iam_policy_document.main.json}"
 }
