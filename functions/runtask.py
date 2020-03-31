@@ -191,6 +191,7 @@ def _runtask(command: str) -> Boto3Result:
             "taskDefinition": target_taskdef_arn,
             "launchType": "FARGATE",
             "networkConfiguration": netconf,
+            "startedBy": started_by,
         },
     )
     new_task_arn = r.body["tasks"][0]["taskArn"]
@@ -289,6 +290,7 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s %(message)s", level=LOGGER_LEVEL)
+    started_by = os.environ["USER"]
     event = json.loads(sys.argv[1])
 
     lambda_handler(event)
