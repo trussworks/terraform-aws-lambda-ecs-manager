@@ -18,7 +18,7 @@ LOGGER.setLevel(LOGGER_LEVEL)
 def log(msg: str = "", data: Any = None, level: str = "debug") -> None:
     """Log a structured message to the console."""
     j = json.dumps({"message": msg, "data": data})
-    getattr(LOGGER, level)("{}".format(j))
+    getattr(LOGGER, level)(f"{j}")
 
 
 class Boto3Error(Exception):
@@ -109,7 +109,7 @@ def _generate_container_definition(
             new command for the container definition
 
     Raises:
-        Exception:
+        KeyError:
             if the container_name is not found in the taskdef
     """
     container_definiton: Dict[str, Any]
@@ -117,9 +117,7 @@ def _generate_container_definition(
         if container_definition["name"] == container_name:
             break
     else:
-        raise Exception(
-            "Definition for container {} not found.".format(container_name)
-        )
+        raise KeyError(f"Definition for container {container_name} not found.")
 
     container_definition["logConfiguration"]["options"][
         "awslogs-stream-prefix"
@@ -137,7 +135,7 @@ def _runtask(command: str) -> Boto3Result:
     _cluster = os.environ["ECS_CLUSTER"]
     _service = os.environ["ECS_SERVICE"]
     _container_name = os.environ["ECS_CONTAINER"]
-    taskdef_family = "{}-lambda-{}".format(_service, _environment)
+    taskdef_family = f"{_service}-lambda-{_environment}"
 
     ecs = boto3.client("ecs")
 
