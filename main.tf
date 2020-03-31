@@ -116,8 +116,8 @@ resource "aws_iam_role_policy" "main" {
 
 data "archive_file" "main" {
   type        = "zip"
-  source_file = "${substr("${path.module}/functions/runtask.py", length(path.cwd) + 1, -1)}"
-  output_path = "${substr("${path.module}/functions/runtask.zip", length(path.cwd) + 1, -1)}"
+  source_file = "${path.module}/functions/runtask.py"
+  output_path = "${path.module}/functions/runtask.zip"
 }
 
 resource "aws_lambda_function" "main" {
