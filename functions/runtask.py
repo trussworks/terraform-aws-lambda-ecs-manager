@@ -97,7 +97,21 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
 def _generate_container_definition(
     taskdef: Dict[str, Any], container_name: str, command: str
 ) -> Dict[str, Any]:
-    """Create a definition to run the given command on the given container."""
+    """Create a definition to run the given command on the given container.
+
+    Arguments:
+        taskdef:
+            task definition to use in the container definition
+        container_name:
+            name of the container to use as a template for the new
+            container definition
+        command:
+            new command for the container definition
+
+    Raises:
+        Exception:
+            if the container_name is not found in the taskdef
+    """
     container_definiton: Dict[str, Any]
     for container_definition in taskdef["containerDefinitions"]:
         if container_definition["name"] == container_name:
