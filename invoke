@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 if [[ -r "$1" ]]; then
-  payload="$(<"$1")"
+  payload="$(base64 <"$1")"
 else
   payload="$1"
 fi
