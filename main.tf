@@ -90,7 +90,7 @@ data "aws_iam_policy_document" "main" {
 }
 
 resource "aws_iam_role_policy" "main" {
-  name   = "lambda-ecs-deploy-${var.name}-${var.environment}-policy"
+  name   = "lambda-ecs-runtask-${var.name}-${var.environment}-policy"
   role   = "${aws_iam_role.main.name}"
   policy = "${data.aws_iam_policy_document.main.json}"
 }
