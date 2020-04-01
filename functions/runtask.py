@@ -13,6 +13,9 @@ import boto3
 LOGGER = logging.getLogger()
 LOGGER_LEVEL = logging.DEBUG
 LOGGER.setLevel(LOGGER_LEVEL)
+STDOUT_HANDLER = logging.StreamHandler(sys.stdout)
+STDOUT_HANDLER.setLevel(logging.INFO)
+LOGGER.addHandler(STDOUT_HANDLER)
 
 
 def log(msg: str = "", data: Any = None, level: str = "debug") -> None:
@@ -273,7 +276,7 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
         None
     """
     start_t = time.time()
-    log(msg="event received", data=event)
+    log(msg="event received", data=event, level="info")
     command = event.get("command") or ""
     response = {"request_payload": command}
 
@@ -284,6 +287,7 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
     log(
         msg="response received",
         data={"response": response, "duration": duration},
+        level="info",
     )
     sys.exit(result.body.get("taskStatus", {}).get("exitCode", 1))
 
