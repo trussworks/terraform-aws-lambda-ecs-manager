@@ -1,6 +1,6 @@
 import pytest as _pytest
 
-from functions.aws import Boto3Error, Boto3InputError, Boto3Result
+from functions.runtask import Boto3Error, Boto3InputError, Boto3Result
 
 
 @_pytest.fixture
