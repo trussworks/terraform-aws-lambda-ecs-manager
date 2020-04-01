@@ -294,7 +294,6 @@ def lambda_handler(
     return {
         "msg": "response received",
         "data": {"response": response, "duration": duration},
-        "level": "info",
     }
 
 
