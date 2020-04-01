@@ -263,7 +263,9 @@ def _task_wait(
         return Boto3Result(response={})
 
 
-def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
+def lambda_handler(
+    event: Dict[str, str], context: Any = None
+) -> Dict[str, Any]:
     """Define a Lambda function entry-point.
 
     Takes an dictionary event, processes it, and logs a response message.
@@ -289,6 +291,11 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
         data={"response": response, "duration": duration},
         level="info",
     )
+    return {
+        "msg": "response received",
+        "data": {"response": response, "duration": duration},
+        "level": "info",
+    }
 
 
 if __name__ == "__main__":
