@@ -289,7 +289,6 @@ def lambda_handler(event: Dict[str, str], context: Any = None) -> None:
         data={"response": response, "duration": duration},
         level="info",
     )
-    sys.exit(result.body.get("taskStatus", {}).get("exitCode", 1))
 
 
 if __name__ == "__main__":
