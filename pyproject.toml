@@ -35,7 +35,7 @@ flake8-print = "^3.1.4"
 
 [tool.black]
 line-length = 79
-target_version = ["py38"]
+target_version = ["py37"]
 
 [tool.isort]
 combine_star = true
