@@ -7,4 +7,4 @@ else
 fi
 function_name="$2"
 
-( set -x -u ; aws lambda invoke --cli-read-timeout 240 --function "$function_name" --payload "$payload" /dev/stdout )
+( set -x -u ; aws lambda invoke --cli-read-timeout 240 --function "$function_name" --payload "$payload" "$3" )
