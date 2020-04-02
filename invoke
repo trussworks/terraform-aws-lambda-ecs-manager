@@ -6,6 +6,6 @@ else
   payload="$1"
 fi
 function_name="$2"
-payload_file="$3"
+response_file="$3"
 
-( set -x -u ; aws lambda invoke --cli-read-timeout 240 --function "$function_name" --payload "$payload" "$payload_file" )
+( set -x -u ; aws lambda invoke --cli-read-timeout 240 --function "$function_name" --payload "$payload" "$response_file" )
