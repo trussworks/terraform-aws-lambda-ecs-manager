@@ -4,8 +4,8 @@ version = "0.1.0"
 description = ""
 authors = ["Ryan Delaney <ryan@truss.works>"]
 readme = "README.md"
-repository = "https://github.com/trussworks/terraform-aws-lambda-runtask"
-homepage = "https://registry.terraform.io/modules/trussworks/lambda-runtask/aws/"
+repository = "https://github.com/trussworks/terraform-aws-lambda-ecs-manager"
+homepage = "https://registry.terraform.io/modules/trussworks/lambda-ecs-manager/aws/"
 
 [tool.poetry.dependencies]
 python = "^3.7"

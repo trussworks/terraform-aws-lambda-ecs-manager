@@ -10,8 +10,8 @@
  *
  * ```hcl
  *
- * module "lambda_runtask" {
- *   source = "../../../modules/aws-lambda-runtask"
+ * module "lambda_ecs_manager" {
+ *   source = "../../../modules/aws-lambda-ecs-manager"
  *
  *   app_name    = var.app_name
  *   environment = var.environment
@@ -23,7 +23,7 @@
  */
 
 locals {
-  service_name   = "ecs-runtask-${var.app_name}-${var.environment}"
+  service_name   = "ecs-manager-${var.app_name}-${var.environment}"
   log_group      = "/aws/lambda/${var.app_name}"
   taskdef_family = "${var.app_name}-lambda-${var.environment}"
 }
@@ -106,7 +106,7 @@ data "aws_iam_policy_document" "main" {
 }
 
 resource "aws_iam_role_policy" "main" {
-  name   = "lambda-ecs-runtask-${var.app_name}-${var.environment}-policy"
+  name   = "lambda-ecs-manager-${var.app_name}-${var.environment}-policy"
   role   = aws_iam_role.main.name
   policy = data.aws_iam_policy_document.main.json
 }
@@ -117,8 +117,8 @@ resource "aws_iam_role_policy" "main" {
 
 data "archive_file" "main" {
   type        = "zip"
-  source_file = "${path.module}/functions/runtask.py"
-  output_path = "${path.module}/functions/runtask.zip"
+  source_file = "${path.module}/functions/manager.py"
+  output_path = "${path.module}/functions/manager.zip"
 }
 
 resource "aws_lambda_function" "main" {
@@ -127,7 +127,7 @@ resource "aws_lambda_function" "main" {
   description   = "Updates an ECS service"
 
   role             = aws_iam_role.main.arn
-  handler          = "runtask.lambda_handler"
+  handler          = "manager.lambda_handler"
   source_code_hash = data.archive_file.main.output_base64sha256
   runtime          = "python3.7"
   timeout          = 120

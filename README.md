@@ -1,6 +1,6 @@
-# aws-lambda-runtask
+# aws-lambda-ecs-manager
 
-Creates a lambda to run an ECS task.
+Creates a lambda manage ECS services in Fargate.
 
 Creates the following resources:
 
@@ -11,8 +11,8 @@ Creates the following resources:
 
 ```hcl
 
-module "ecs_lambda_runtask" {
-  source = "../../../modules/aws-lambda-runtask"
+module "ecs_manager" {
+  source = "../../../modules/aws-lambda-ecs-manager"
 
   name        = "${var.name}"
   environment = "${var.environment}"
