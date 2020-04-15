@@ -280,13 +280,27 @@ def lambda_handler(
     start_t = time.time()
     log(msg="event received", data=event, level="info")
     command = event.get("command") or ""
+    response: Dict[str, Any]
     response = {"request_payload": command}
 
-    result = _runtask(command)
-    if result.exc:
-        response.update(result.error)
+    try:
+        result = _runtask(command)
+    except Exception as unhandled_exception:
+        # This exception is 'unhandled' but we have to return a sensible error
+        # message to the caller
+        msg = {
+            "errors": {
+                "title": type(unhandled_exception).__name__,
+                "message": str(unhandled_exception),
+                "traceback": traceback.format_exc().splitlines(),
+            }
+        }
+        response.update(msg)
     else:
-        response.update(result.body)
+        if result.exc:
+            response.update(result.error)
+        else:
+            response.update(result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
