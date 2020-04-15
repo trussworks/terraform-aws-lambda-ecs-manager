@@ -230,7 +230,7 @@ def _runtask(command: str) -> Boto3Result:
         for key, value in task_description.items()
         if key in ("stopCode", "stoppedReason", "startedBy", "taskArn")
     }
-    task_status.update({"exitCode": container_description["exitCode"]})
+    task_status.update({"exitCode": container_description.get("exitCode", 5)})
 
     return Boto3Result(
         response={
