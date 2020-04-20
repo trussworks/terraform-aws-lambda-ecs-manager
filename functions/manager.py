@@ -320,8 +320,8 @@ def lambda_handler(
         command = event["command"]
         body = event["body"]
     except KeyError:
-        err = _missing_required_keys(list(event), ["command", "body"])
-        log(msg=err["msg"], data=err["data"], level=str(logging.CRITICAL))
+        err = _missing_required_keys(["command", "body"], list(event))
+        log(msg=err["msg"], data=err["data"])
         return {"msg": err["msg"], "data": err["data"]}
 
     response = {"request_payload": {"command": command, "body": body}}
