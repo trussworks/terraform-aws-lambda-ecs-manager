@@ -326,7 +326,10 @@ def lambda_handler(
 
     response = {"request_payload": {"command": command, "body": body}}
     result = __DISPATCH__[command](body)
-    response.update(result.body)
+    if result.exc:
+        response.update(result.error)
+    else:
+        response.update(result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
