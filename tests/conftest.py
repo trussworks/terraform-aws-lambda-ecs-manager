@@ -1,6 +1,6 @@
 import pytest as _pytest
 
-from functions.runtask import Boto3Error, Boto3InputError, Boto3Result
+from functions.manager import Boto3Error, Boto3InputError, Boto3Result
 
 
 @_pytest.fixture
@@ -40,11 +40,6 @@ def test_exception_raiser():
         raise Boto3Error
 
     return foo
-
-
-@_pytest.fixture
-def botoresult():
-    return Boto3Result
 
 
 @_pytest.fixture
