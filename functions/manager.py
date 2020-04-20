@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 import types
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import boto3
 
@@ -132,7 +132,7 @@ def _generate_container_definition(
     return container_definition  # type: ignore
 
 
-def _runtask(command: str) -> Boto3Result:
+def _runtask(command: Union[str, None]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command."""
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
@@ -263,6 +263,9 @@ def _task_wait(
         return Boto3Result(response={})
 
 
+__DISPATCH__ = {"runtask": _runtask}
+
+
 def lambda_handler(
     event: Dict[str, str], context: Any = None
 ) -> Dict[str, Any]:
@@ -279,10 +282,11 @@ def lambda_handler(
     """
     start_t = time.time()
     log(msg="event received", data=event, level="info")
-    command = event.get("command") or ""
-    response = {"request_payload": command}
+    command = event["command"]
+    body = event["body"]
 
-    result = _runtask(command)
+    response = {"request_payload": {"command": command, "body": body}}
+    result = __DISPATCH__[command](body)
     response.update(result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))

@@ -60,7 +60,13 @@ poetry install
 To test the function locally:
 
 ```console
-./run_local ./payload.json
+# run a task without changing the command in the task definition
+$ jq < payload.json
+{
+  "command": "runtask",
+  "body": null
+}
+$ ./run_local ./payload.json
 ```
 
 To test the deployed Lambda:
