@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 import types
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import boto3
 
@@ -22,6 +22,40 @@ def log(msg: str = "", data: Any = None, level: str = "debug") -> None:
     """Log a structured message to the console."""
     j = json.dumps({"message": msg, "data": data})
     getattr(LOGGER, level)(f"{j}")
+
+
+# Custom errors
+def _missing_required_keys(
+    required_keys: List[str], found_keys: List[str]
+) -> Dict[str, str]:
+    """Computes an error message indicating missing input keys.
+
+    Arguments:
+        required_keys: List of required keys.
+        found_keys: List of keys that were found in the input.
+
+    Returns:
+        A dictionary with a pre-formatted error message.
+
+    Raises:
+        TypeError if either argument is not a list.
+        ValueError if all the required keys are present.
+    """
+    if not all(
+        [isinstance(required_keys, list), isinstance(found_keys, list)]
+    ):
+        raise TypeError("argument must be a list type")
+
+    missing_keys = [key for key in required_keys if key not in found_keys]
+    if not missing_keys:
+        raise ValueError("there were no missing keys")
+    return {
+        "msg": "Required field(s) not found",
+        "data": (
+            f"'{missing_keys}' field(s) not optional. "
+            f"Found: {found_keys}.  Required: {required_keys}"
+        ),
+    }
 
 
 class Boto3Error(Exception):
@@ -282,8 +316,13 @@ def lambda_handler(
     """
     start_t = time.time()
     log(msg="event received", data=event, level="info")
-    command = event["command"]
-    body = event["body"]
+    try:
+        command = event["command"]
+        body = event["body"]
+    except KeyError:
+        err = _missing_required_keys(list(event), ["command", "body"])
+        log(msg=err["msg"], data=err["data"], level=str(logging.CRITICAL))
+        return {"msg": err["msg"], "data": err["data"]}
 
     response = {"request_payload": {"command": command, "body": body}}
     result = __DISPATCH__[command](body)
