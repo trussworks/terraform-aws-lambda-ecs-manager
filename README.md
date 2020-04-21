@@ -1,6 +1,6 @@
 # aws-lambda-ecs-manager
 
-Creates a lambda manage ECS services in Fargate.
+Creates a lambda for managing ECS services in Fargate.
 
 Creates the following resources:
 
@@ -60,7 +60,7 @@ poetry install
 To test the function locally:
 
 ```console
-# run a task without changing the command in the task definition
+# run a task without changing the entryPoint command in the task definition
 $ jq < payload.json
 {
   "command": "runtask",
