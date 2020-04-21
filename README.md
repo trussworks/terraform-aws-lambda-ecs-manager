@@ -60,8 +60,7 @@ poetry install
 To test the function locally:
 
 ```console
-# run a task without changing the entryPoint command in the task definition
-$ jq < payload.json
+$ jq < payload.json  # run a task without changing the entryPoint command in the task definition
 {
   "command": "runtask",
   "body": null
