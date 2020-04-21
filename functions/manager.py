@@ -1,4 +1,4 @@
-"""Lambda function for running ECS tasks."""
+"""Lambda function for managing ECS tasks and services."""
 import json
 import logging
 import os
