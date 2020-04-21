@@ -12,3 +12,8 @@ output "log_group" {
   description = "CloudWatch log group the lambda logs to."
   value       = local.log_group
 }
+
+output "version" {
+  description = "Published version of the lambda function."
+  value       = aws_lambda_function.main.version
+}
