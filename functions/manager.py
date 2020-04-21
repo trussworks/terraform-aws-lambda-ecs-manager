@@ -71,7 +71,22 @@ class Boto3InputError(Boto3Error, AttributeError):
 
 
 class Boto3Result:
-    """Result from a boto3 module call."""
+    """Result from a boto3 module call.
+
+    Arguments:
+        response: A dict returned from the boto3 call.
+        exc: An exception raised by the boto3 call.
+
+    Attributes:
+        status: HTTPStatusCode that was returned with the response, if any.
+        body: A copy of the response argument, if any.
+        exc: If the boto3 call raised an exception, it will be named here.
+        error: A dict with a parse stack trace from exc.
+
+    Raises:
+        Boto3InputError: If neither argument was both passed and has the
+            correct type.
+    """
 
     def __init__(
         self,
