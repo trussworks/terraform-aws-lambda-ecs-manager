@@ -23,3 +23,9 @@ variable "logs_retention" {
   description = "Number of days to retain lambda events."
   default     = "365"
 }
+
+variable "publish" {
+  type        = bool
+  description = "Whether to publish creation/change as new Lambda Function Version."
+  default     = false
+}
