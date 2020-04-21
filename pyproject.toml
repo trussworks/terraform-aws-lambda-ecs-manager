@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "aws-lambda-runtask"
+name = "functions"
 version = "0.1.0"
 description = ""
 authors = ["Ryan Delaney <ryan@truss.works>"]
 readme = "README.md"
-repository = "https://github.com/trussworks/terraform-aws-lambda-runtask"
-homepage = "https://registry.terraform.io/modules/trussworks/lambda-runtask/aws/"
+repository = "https://github.com/trussworks/terraform-aws-lambda-ecs-manager"
+homepage = "https://registry.terraform.io/modules/trussworks/lambda-ecs-manager/aws/"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -35,13 +35,13 @@ flake8-print = "^3.1.4"
 
 [tool.black]
 line-length = 79
-target_version = ["py38"]
+target_version = ["py37"]
 
 [tool.isort]
 combine_star = true
 indent='    '
 known_first_party = []
-known_third_party = []
+known_third_party = ["boto3", "pytest"]
 length_sort = false
 line_length = 79
 multi_line_output = 3
