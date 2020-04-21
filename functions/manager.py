@@ -137,7 +137,19 @@ class Boto3Result:
 
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
-    """Call a function and return the response as a Boto3Result."""
+    """Call a function and return the response as a Boto3Result.
+
+    Arguments:
+        boto3_function: A callable to be called. Typically this will be a
+            function in the boto3 module.
+        **kwargs: A dictionary of arguments to pass when calling the
+            boto3_function.
+
+    Returns:
+        Boto3Result: If any exception was raised by the boto3_function call,
+            the exc attribute will be set. Otherwise, the response attribute
+            will be set.
+    """
     try:
         r = boto3_function(**kwargs)
     except Exception as exc:
@@ -302,6 +314,25 @@ def _task_wait(
     delay: int = 6,
     attempts: int = 20,
 ) -> Boto3Result:
+    """Wait for a task to finish.
+
+    Holds execution until the given task_arn on the given cluster is not
+    running, or a timeout is exceeded.
+
+    Arguments:
+        ecs: A boto3.client object.
+        cluster: A string with the name of the cluster where the task_arn can
+            be found.
+        task_arn: A string with the task_arn to wait for.
+        delay: An int indicating how long to wait between attempts.
+        attempts: An int indicating how many times to check if execution has
+            finished before timing out.
+
+    Returns:
+        Boto3Result: If any exception was raised by the get_waiter call,
+            including a timeout exception, the exc attribute will be set.
+            Otherwise, the response attribute will be set.
+    """
     waiter = ecs.get_waiter("tasks_stopped")
     r = invoke(
         waiter.wait,
@@ -331,8 +362,12 @@ def lambda_handler(
         event: A dictionary with an optional command.
         context: This is ignored.
 
+    Raises:
+        The function will attempt to return unhandled exceptions in the return
+        value.
+
     Returns:
-        None
+        A dict with the data to be returned to the invoker.
     """
     start_t = time.time()
     log(msg="event received", data=event, level="info")
