@@ -1,6 +1,6 @@
 # aws-lambda-ecs-manager
 
-Creates a lambda manage ECS services in Fargate.
+Creates a lambda for managing ECS services in Fargate.
 
 Creates the following resources:
 
