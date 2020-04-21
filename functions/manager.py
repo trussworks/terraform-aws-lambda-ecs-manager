@@ -166,8 +166,13 @@ def _generate_container_definition(
     return container_definition  # type: ignore
 
 
-def _runtask(command: Union[str, None]) -> Boto3Result:
-    """Runs an ECS service optionally updating the task command."""
+def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
+    """Runs an ECS service optionally updating the task command.
+
+    Arguments:
+        taskdef_command: If set, the entryPoint command field in the ECS task
+        definition will be changed to this value before the task is started.
+    """
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
     _service = os.environ["ECS_SERVICE"]
@@ -183,7 +188,7 @@ def _runtask(command: Union[str, None]) -> Boto3Result:
     netconf = r.body["services"][0]["networkConfiguration"]
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
-    if command:
+    if taskdef_command:
         _container_name = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
@@ -200,7 +205,7 @@ def _runtask(command: Union[str, None]) -> Boto3Result:
                 "family": taskdef_family,
                 "containerDefinitions": [
                     _generate_container_definition(
-                        service_taskdef, _container_name, command
+                        service_taskdef, _container_name, taskdef_command
                     )
                 ],
                 "executionRoleArn": service_taskdef["executionRoleArn"],
