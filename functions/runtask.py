@@ -1,4 +1,6 @@
 """Lambda function for running ECS tasks."""
+# this comment serves no purpose but to coerce terraform into publishing a new
+# lambda version
 import json
 import logging
 import os
