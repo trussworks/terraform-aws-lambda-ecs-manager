@@ -39,7 +39,7 @@ def _missing_required_keys(
 
     Raises:
         TypeError if either argument is not a list.
-        ValueError if not all the required keys are present.
+        ValueError if all the required keys are present.
     """
     if not all(
         [isinstance(required_keys, list), isinstance(found_keys, list)]
