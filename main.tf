@@ -117,8 +117,17 @@ resource "aws_iam_role_policy" "main" {
 
 data "archive_file" "main" {
   type        = "zip"
-  source_file = "${path.module}/functions/manager.py"
   output_path = "${path.module}/functions/manager.zip"
+
+  source {
+    content  = file("${path.module}/functions/manager.py")
+    filename = "manager.py"
+  }
+
+  source {
+    content  = file("${path.module}/functions/boto3_helpers.py")
+    filename = "boto3_helpers.py"
+  }
 }
 
 resource "aws_lambda_function" "main" {

@@ -1,6 +1,6 @@
 import pytest as _pytest
 
-from functions.manager import Boto3Error, Boto3InputError, Boto3Result
+from functions.boto3_helpers import Boto3Error, Boto3InputError, Boto3Result
 
 
 @_pytest.fixture
