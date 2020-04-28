@@ -159,9 +159,9 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
 
 
 def _generate_container_definition(
-    taskdef: Dict[str, Any], container_name: str, command: str
+    taskdef: Dict[str, Any], container_name: str, entrypoint: str
 ) -> Dict[str, Any]:
-    """Create a definition to run the given command on the given container.
+    """Create a definition to run the given entrypoint on the given container.
 
     Arguments:
         taskdef:
@@ -169,8 +169,8 @@ def _generate_container_definition(
         container_name:
             name of the container to use as a template for the new
             container definition
-        command:
-            new command for the container definition
+        entrypoint:
+            new entryPoint for the container definition
 
     Raises:
         KeyError:
@@ -187,18 +187,19 @@ def _generate_container_definition(
         "awslogs-stream-prefix"
     ] = "lambda"
     container_definition.update(
-        command=command,
+        command=entrypoint,
         portMappings=[],  # nothing should connect to this container
     )
     return container_definition  # type: ignore
 
 
-def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
+def _runtask(taskdef_entrypoint: Union[str, None]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command.
 
     Arguments:
-        taskdef_command: If set, the entryPoint command field in the ECS task
-        definition will be changed to this value before the task is started.
+        taskdef_entrypoint: If set, the entryPoint command field in the ECS
+        task definition will be changed to this value before the task is
+        started.
     """
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
@@ -215,7 +216,7 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
     netconf = r.body["services"][0]["networkConfiguration"]
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
-    if taskdef_command:
+    if taskdef_entrypoint:
         _container_name = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
@@ -232,7 +233,7 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
                 "family": taskdef_family,
                 "containerDefinitions": [
                     _generate_container_definition(
-                        service_taskdef, _container_name, taskdef_command
+                        service_taskdef, _container_name, taskdef_entrypoint
                     )
                 ],
                 "executionRoleArn": service_taskdef["executionRoleArn"],
