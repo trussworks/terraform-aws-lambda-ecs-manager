@@ -1,6 +1,7 @@
 import pytest as _pytest
 
 from functions import boto3_helpers
+from functions.boto3_helpers import Boto3Error, Boto3Result
 
 
 class TestBoto3Result:
@@ -38,13 +39,60 @@ class TestInvoke:
         result = boto3_helpers.invoke(mock_function, **params)
 
         mock_function.assert_called_once_with(**params)
-        assert isinstance(result, boto3_helpers.Boto3Result)
+        assert isinstance(result, Boto3Result)
         assert result.body == {"somedict": "return_value"}
         assert result.exc is None
 
     def test_invoke_exc(self, test_exception_raiser):
         result = boto3_helpers.invoke(test_exception_raiser)
 
-        assert isinstance(result, boto3_helpers.Boto3Result)
+        assert isinstance(result, Boto3Result)
         assert result.body == {}
-        assert isinstance(result.exc, boto3_helpers.Boto3Error)
+        assert isinstance(result.exc, Boto3Error)
+
+
+class TestUpdateService:
+    def test_update_service(self, mocker, fake_ecs_client):
+        fake_invoke = mocker.patch.object(
+            boto3_helpers,
+            "invoke",
+            return_value=Boto3Result({"response": "a_response"}),
+        )
+
+        result = boto3_helpers.update_service(
+            ecs_client=fake_ecs_client,
+            service_name="some_service_name",
+            taskdef_id="some_taskdef_id",
+            cluster_id="some_cluster",
+        )
+
+        assert isinstance(result, Boto3Result)
+        assert isinstance(result.body, dict)
+        assert result.exc is None
+
+        fake_invoke.assert_called_once_with(
+            fake_ecs_client.update_service,
+            **{
+                "service": "some_service_name",
+                "cluster": "some_cluster",
+                "taskDefinition": "some_taskdef_id",
+                "forceNewDeployment": False,
+            },
+        )
+
+    def test_update_service_exc(
+        self, mocker, fake_ecs_client, result_with_exception
+    ):
+        fake_invoke = mocker.patch.object(
+            boto3_helpers, "invoke", return_value=result_with_exception
+        )
+
+        result = boto3_helpers.update_service(
+            ecs_client=fake_ecs_client, service_name="some_service_name"
+        )
+
+        fake_invoke.assert_called_once()
+        assert isinstance(result, Boto3Result)
+        assert isinstance(result.body, dict)
+        assert result.body == {}
+        assert isinstance(result.exc, Exception)

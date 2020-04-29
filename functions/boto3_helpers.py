@@ -3,6 +3,8 @@ import traceback
 import types
 from typing import Any, Dict, Optional
 
+import boto3
+
 
 class Boto3Error(Exception):
     """Generic Boto3Error exception."""
@@ -102,3 +104,44 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
         return Boto3Result(exc=exc)
     else:
         return Boto3Result(response=r or {})
+
+
+def update_service(
+    ecs_client: boto3.client,
+    service_name: str,
+    cluster_id: Optional[str] = None,
+    taskdef_id: Optional[str] = None,
+    force_new_deployment: bool = False,
+) -> Boto3Result:
+    """Update an ECS service.
+
+    Arguments:
+        ecs_client: A boto3 ecs client object to connect.
+
+        service_name: The name of the service to update. Required.
+
+        cluster_id: The name or ARN of the cluster the service is running on.
+
+        taskdef_id: The 'family:revision' or ARN of the task definition to run
+        in the service being updated. If a revision is not specified, the
+        latest ACTIVE revision is used.
+
+        force_new_deployment: Performs a new deployment when there were no
+        service definition changes. For example, the service can use a new
+        Docker image with the same image/tag combination (imagename:latest) or
+        to roll Fargate tasks onto a newer platform version.
+
+    Returns:
+        Boto3Result
+    """
+    new_service_definitions = {
+        "service": service_name,
+        "taskDefinition": taskdef_id,
+        "forceNewDeployment": force_new_deployment,
+    }
+    if cluster_id:
+        new_service_definitions["cluster"] = cluster_id
+    if taskdef_id:
+        new_service_definitions["taskDefinition"] = taskdef_id
+
+    return invoke(ecs_client.update_service, **new_service_definitions)

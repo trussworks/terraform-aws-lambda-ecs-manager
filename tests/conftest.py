@@ -52,3 +52,8 @@ def result_with_exception(test_exception):
         raise test_exception
     except test_exception as te:
         return Boto3Result(response=None, exc=te)
+
+
+@_pytest.fixture
+def fake_ecs_client(mocker):
+    return mocker.MagicMock()
