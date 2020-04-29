@@ -35,11 +35,8 @@ def test_function():
 
 
 @_pytest.fixture
-def test_exception_raiser():
-    def foo():
-        raise Boto3Error
-
-    return foo
+def test_exception_raiser(mocker):
+    return mocker.Mock(side_effect=Boto3Error("test_error"))
 
 
 @_pytest.fixture
