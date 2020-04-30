@@ -93,14 +93,22 @@ def _generate_container_definition(
     return container_definition  # type: ignore
 
 
-def _runtask(taskdef_entrypoint: Union[str, None]) -> Boto3Result:
+def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command.
 
     Arguments:
+        body: A dictionary with the command body.
+
+    Keys:
         taskdef_entrypoint: If set, the entryPoint command field in the ECS
         task definition will be changed to this value before the task is
         started.
     """
+    try:
+        taskdef_entrypoint = body["entrypoint"]
+    except KeyError:
+        taskdef_entrypoint = None
+
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
     _service = os.environ["ECS_SERVICE"]
@@ -253,14 +261,16 @@ __DISPATCH__ = {"runtask": _runtask}
 
 
 def lambda_handler(
-    event: Dict[str, str], context: Any = None
+    event: Dict[str, Any], context: Any = None
 ) -> Dict[str, Any]:
     """Define a Lambda function entry-point.
 
     Takes an dictionary event, processes it, and logs a response message.
 
     Args:
-        event: A dictionary with an optional command.
+        event: A dictionary with a command and body to pass to the command
+        handler.
+
         context: This is ignored.
 
     Raises:

@@ -63,7 +63,7 @@ To test the function locally:
 $ jq < payload.json  # run a task without changing the entryPoint in the task definition
 {
   "command": "runtask",
-  "body": null
+  "body": { "entrypoint": null }
 }
 $ ./run_local ./payload.json
 ```
