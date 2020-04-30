@@ -109,7 +109,7 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
 def update_service(
     ecs_client: boto3.client,
     service_name: str,
-    cluster_id: Optional[str] = None,
+    cluster_id: str,
     taskdef_id: Optional[str] = None,
     force_new_deployment: bool = False,
 ) -> Boto3Result:
@@ -135,12 +135,11 @@ def update_service(
         Boto3Result
     """
     new_service_definitions = {
+        "cluster": cluster_id,
         "service": service_name,
         "taskDefinition": taskdef_id,
         "forceNewDeployment": force_new_deployment,
     }
-    if cluster_id:
-        new_service_definitions["cluster"] = cluster_id
     if taskdef_id:
         new_service_definitions["taskDefinition"] = taskdef_id
 

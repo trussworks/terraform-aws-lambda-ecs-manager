@@ -88,7 +88,9 @@ class TestUpdateService:
         )
 
         result = boto3_helpers.update_service(
-            ecs_client=fake_ecs_client, service_name="some_service_name"
+            ecs_client=fake_ecs_client,
+            service_name="some_service_name",
+            cluster_id="some_cluster",
         )
 
         fake_invoke.assert_called_once()
