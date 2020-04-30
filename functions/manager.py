@@ -4,11 +4,11 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import boto3
 
-from .boto3_helpers import Boto3Result, invoke
+from .boto3_helpers import Boto3Result, invoke, update_service
 
 LOGGER = logging.getLogger()
 LOGGER_LEVEL = logging.DEBUG
@@ -257,7 +257,108 @@ def _task_wait(
         return Boto3Result(response={})
 
 
-__DISPATCH__ = {"runtask": _runtask}
+def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
+    """Deploy containers on an ECS service.
+
+    Arguments:
+        body: A dictionary with the following elements.
+
+    Keys:
+        cluster_id: Name or ARN of of the cluster that hosts the services to
+        deploy.
+
+        service_ids: A list of services to deploy the image into. Can be short
+        names or ARNs.
+
+        image: The fully qualified image:tag pair that will be deployed into
+        each container definition in the service. If this is None, the services
+        in service_ids will be restarted without changes to their container
+        definitions.
+
+    Returns:
+        Boto3Result with a list of ARNs of services that were updated.
+
+    Raises:
+        KeyError: If any key is missing from the body.
+
+        TypeError: If the service_ids value is not a list of strings, or any
+        other value is not a string.
+    """
+    ecs_service = Dict[str, str]
+
+    ecs: boto3.client = boto3.client("ecs")
+
+    cluster_id: str = cast(str, body["cluster_id"])
+    service_ids: List[str] = cast(List[str], body["service_ids"])
+    image: str = cast(str, body["image"])
+
+    r = invoke(
+        ecs.describe_services,
+        **{"cluster": cluster_id, "services": service_ids},
+    )
+    if r.exc:
+        return r
+    described_services: List[ecs_service] = r.body["services"]
+
+    target_services: List[ecs_service] = [
+        svc
+        for svc in described_services
+        if svc["serviceName"] in service_ids
+        or svc["serviceArn"] in service_ids
+    ]
+
+    updated_services: List[str] = []
+    for service in target_services:
+        taskdef_arn = service["taskDefinition"]
+        r = invoke(
+            ecs.describe_task_definition, **{"taskDefinition": taskdef_arn}
+        )
+        if r.exc:
+            return r
+        taskdef = r.body["taskDefinition"]
+
+        if not image:
+            # redeploy the service with the same task definition
+            new_taskdef_arn: str = taskdef["taskDefinitionArn"]
+        else:
+            # register a modified task definition with the new container
+            # definitions
+            service_containerdefs = taskdef["containerDefinitions"].copy()
+
+            for containerdef in service_containerdefs:
+                containerdef.update(image=image)
+
+            taskdef.update(service_containerdefs)
+
+            r = invoke(ecs.register_task_definition, **taskdef)
+            if r.exc:
+                return r
+
+            new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
+            log("Registered task definition", new_taskdef_arn)
+
+        r = update_service(
+            ecs_client=ecs,
+            cluster_id=cluster_id,
+            service_name=service["serviceName"],
+            taskdef_id=new_taskdef_arn,
+            force_new_deployment=True,
+        )
+        if r.exc:
+            return r
+        else:
+            service_arn: str = r.body["service"]["serviceArn"]
+            log("Updated service", service_arn)
+            updated_services.append(service_arn)
+
+    success = {
+        "ResponseMetadata": {"HTTPStatusCode": 200},
+        "UpdatedServiceArns": updated_services,
+    }
+    return Boto3Result(response=success)
+
+
+__DISPATCH__ = {"runtask": _runtask, "deploy": _deploy}
 
 
 def lambda_handler(
@@ -291,7 +392,7 @@ def lambda_handler(
         return {"msg": err["msg"], "data": err["data"]}
 
     response = {"request_payload": {"command": command, "body": body}}
-    result = __DISPATCH__[command](body)
+    result = __DISPATCH__[command](body)  # type: ignore
     if result.exc:
         response.update(result.error)
     else:
