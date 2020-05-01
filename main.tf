@@ -140,6 +140,7 @@ resource "aws_lambda_function" "main" {
   source_code_hash = data.archive_file.main.output_base64sha256
   runtime          = "python3.7"
   timeout          = 120
+  publish          = var.publish
 
   environment {
     variables = {

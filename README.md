@@ -54,7 +54,7 @@ Set up the environment:
 ```console
 brew install poetry pre-commit
 pre-commit install --install-hooks
-poetry install
+poetry install && poetry shell
 ```
 
 To test the function locally:
