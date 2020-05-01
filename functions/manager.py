@@ -251,10 +251,7 @@ def _task_wait(
             "WaiterConfig": {"Delay": delay, "MaxAttempts": attempts},
         },
     )
-    if r.error:
-        return r
-    else:
-        return Boto3Result(response={})
+    return r
 
 
 def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
