@@ -119,8 +119,8 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     r = invoke(
         ecs.describe_services, **{"cluster": _cluster, "services": [_service]}
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     netconf = r.body["services"][0]["networkConfiguration"]
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
@@ -129,8 +129,8 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
-        if r.exc:
-            return Boto3Result(exc=r.exc)
+        if r.error:
+            return r
         service_taskdef = r.body["taskDefinition"]
 
         # create and register a custom task definition by modifying the
@@ -154,8 +154,8 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
                 ],
             },
         )
-        if r.exc:
-            return Boto3Result(exc=r.exc)
+        if r.error:
+            return r
         target_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
         log(msg="Created task definition", data=target_taskdef_arn)
     else:
@@ -173,22 +173,22 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         },
     )
     new_task_arn = r.body["tasks"][0]["taskArn"]
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     log(msg="Running task", data=new_task_arn)
 
     # wait for the task to finish
     r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     log(msg="Finished waiting for task execution", data=new_task_arn)
 
     # inspect task result
     r = invoke(
         ecs.describe_tasks, **{"cluster": _cluster, "tasks": [new_task_arn]}
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
 
     if r.body["failures"]:
         return Boto3Result(
@@ -251,8 +251,8 @@ def _task_wait(
             "WaiterConfig": {"Delay": delay, "MaxAttempts": attempts},
         },
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     else:
         return Boto3Result(response={})
 
@@ -296,7 +296,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         ecs.describe_services,
         **{"cluster": cluster_id, "services": service_ids},
     )
-    if r.exc:
+    if r.error:
         return r
     described_services: List[ecs_service] = r.body["services"]
 
@@ -313,7 +313,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": taskdef_arn}
         )
-        if r.exc:
+        if r.error:
             return r
         taskdef = r.body["taskDefinition"]
 
@@ -331,7 +331,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             taskdef.update(service_containerdefs)
 
             r = invoke(ecs.register_task_definition, **taskdef)
-            if r.exc:
+            if r.error:
                 return r
 
             new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
@@ -344,7 +344,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             taskdef_id=new_taskdef_arn,
             force_new_deployment=True,
         )
-        if r.exc:
+        if r.error:
             return r
         else:
             service_arn: str = r.body["service"]["serviceArn"]
