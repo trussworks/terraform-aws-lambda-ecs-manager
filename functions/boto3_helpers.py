@@ -1,6 +1,7 @@
 """Helper functions for interacting with ECS services via boto3."""
 import traceback
 import types
+from http import HTTPStatus
 from typing import Any, Dict, Optional
 
 import boto3
@@ -71,17 +72,26 @@ class Boto3Result:
 
     def _get_error_msg(self) -> Dict[str, Any]:
         """Return the response stacktrace, if any."""
-        if self.exc is None:
+        if self.exc:
+            tb = traceback.TracebackException.from_exception(
+                self.exc, capture_locals=True
+            )
+            return {
+                "title": type(self.exc).__name__,
+                "message": str(self.exc),
+                "traceback": list(tb.format()),
+            }
+        elif not (
+            self.status == HTTPStatus.OK.value
+            or self.status == str(HTTPStatus.OK.value)
+        ):
+            return {
+                "title": "HTTP status not OK.",
+                "message": f"http status was {self.status}",
+                "traceback": None,
+            }
+        else:
             return {}
-
-        tb = traceback.TracebackException.from_exception(
-            self.exc, capture_locals=True
-        )
-        return {
-            "title": type(self.exc).__name__,
-            "message": str(self.exc),
-            "traceback": list(tb.format()),
-        }
 
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:

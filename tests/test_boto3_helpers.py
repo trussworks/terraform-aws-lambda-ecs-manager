@@ -30,6 +30,25 @@ class TestBoto3Result:
         with _pytest.raises(inputerror_exception):
             boto3result()
 
+    def test_Boto3Result_with_http_failure(self):
+        result_with_http_failure = Boto3Result(
+            response={
+                "ResponseMetadata": {"HTTPStatusCode": "429"},
+                "foo": "bar",
+            }
+        )
+        assert result_with_http_failure.status == "429"
+        assert result_with_http_failure.body == {
+            "ResponseMetadata": {"HTTPStatusCode": "429"},
+            "foo": "bar",
+        }
+        assert result_with_http_failure.exc is None
+        assert result_with_http_failure.error == {
+            "message": "http status was 429",
+            "title": "HTTP status not OK.",
+            "traceback": None,
+        }
+
 
 class TestInvoke:
     def test_invoke_body(self, mocker):

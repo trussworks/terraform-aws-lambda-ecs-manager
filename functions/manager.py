@@ -207,13 +207,13 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     }
     task_status.update({"exitCode": container_description["exitCode"]})
 
-    return Boto3Result(
-        response={
-            "taskArn": new_task_arn,
-            "taskDefinitionArn": target_taskdef_arn,
-            "taskStatus": task_status,
-        }
-    )
+    success = {
+        "ResponseMetadata": {"HTTPStatusCode": 200},
+        "taskArn": new_task_arn,
+        "taskDefinitionArn": target_taskdef_arn,
+        "taskStatus": task_status,
+    }
+    return Boto3Result(response=success)
 
 
 def _task_wait(
