@@ -25,7 +25,7 @@ output "qualified_arn" {
 
 output "name" {
   description = "Name of the lambda function."
-  value       = var.app
+  value       = var.app_name
 }
 
 output "last_modified" {
