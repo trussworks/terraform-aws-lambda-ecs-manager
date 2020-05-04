@@ -38,6 +38,9 @@ line-length = 79
 target_version = ["py37"]
 
 [tool.isort]
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
 combine_star = true
 indent='    '
 known_first_party = []
