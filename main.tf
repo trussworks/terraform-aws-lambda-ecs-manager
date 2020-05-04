@@ -117,7 +117,7 @@ resource "aws_iam_role_policy" "main" {
 
 data "archive_file" "main" {
   type        = "zip"
-  output_path = "${path.module}/functions/manager.zip"
+  output_path = "${path.module}/functions/runtask.zip"
 
   source {
     content  = file("${path.module}/functions/manager.py")
