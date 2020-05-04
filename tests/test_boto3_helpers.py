@@ -1,7 +1,7 @@
 import pytest as _pytest
 
-from functions import boto3_helpers
-from functions.boto3_helpers import Boto3Error, Boto3Result
+from functions.pkg import boto3_helpers
+from functions.pkg.boto3_helpers import Boto3Error, Boto3Result
 
 
 class TestBoto3Result:
