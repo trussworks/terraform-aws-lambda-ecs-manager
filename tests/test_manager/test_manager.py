@@ -1,6 +1,6 @@
 import pytest as _pytest
 
-import functions.pkg.manager as manager
+import functions.manager as manager
 
 
 class TestLambdaHandler:

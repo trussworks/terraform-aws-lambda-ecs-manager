@@ -1,7 +1,8 @@
 import pytest as _pytest
 
-from functions.pkg import boto3_helpers
-from functions.pkg.boto3_helpers import Boto3Error, Boto3Result
+import functions.manager as manager
+from functions.manager import Boto3Error as Boto3Error
+from functions.manager import Boto3Result as Boto3Result
 
 
 class TestBoto3Result:
@@ -55,7 +56,7 @@ class TestInvoke:
         mock_function = mocker.Mock(return_value={"somedict": "return_value"})
         params = {"foo": "foo_arg", "bar": "bar_arg", "baz": "baz_arg"}
 
-        result = boto3_helpers.invoke(mock_function, **params)
+        result = manager.invoke(mock_function, **params)
 
         mock_function.assert_called_once_with(**params)
         assert isinstance(result, Boto3Result)
@@ -63,7 +64,7 @@ class TestInvoke:
         assert result.exc is None
 
     def test_invoke_exc(self, test_exception_raiser):
-        result = boto3_helpers.invoke(test_exception_raiser)
+        result = manager.invoke(test_exception_raiser)
 
         assert isinstance(result, Boto3Result)
         assert result.body == {}
@@ -73,12 +74,12 @@ class TestInvoke:
 class TestUpdateService:
     def test_update_service(self, mocker, fake_ecs_client):
         fake_invoke = mocker.patch.object(
-            boto3_helpers,
+            manager,
             "invoke",
             return_value=Boto3Result({"response": "a_response"}),
         )
 
-        result = boto3_helpers.update_service(
+        result = manager.update_service(
             ecs_client=fake_ecs_client,
             service_name="some_service_name",
             taskdef_id="some_taskdef_id",
@@ -103,10 +104,10 @@ class TestUpdateService:
         self, mocker, fake_ecs_client, result_with_exception
     ):
         fake_invoke = mocker.patch.object(
-            boto3_helpers, "invoke", return_value=result_with_exception
+            manager, "invoke", return_value=result_with_exception
         )
 
-        result = boto3_helpers.update_service(
+        result = manager.update_service(
             ecs_client=fake_ecs_client,
             service_name="some_service_name",
             cluster_id="some_cluster",
