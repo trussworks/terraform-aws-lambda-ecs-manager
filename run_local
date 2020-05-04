@@ -7,4 +7,4 @@ else
   data="$1"
 fi
 
-( set -x ; poetry run python3 functions/manager.py "$data" )
+( set -x ; poetry run python3 -m functions.pkg.manager "$data" )

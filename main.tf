@@ -120,12 +120,12 @@ data "archive_file" "main" {
   output_path = "${path.module}/functions/runtask.zip"
 
   source {
-    content  = file("${path.module}/functions/manager.py")
+    content  = file("${path.module}/functions/pkg/manager.py")
     filename = "manager.py"
   }
 
   source {
-    content  = file("${path.module}/functions/boto3_helpers.py")
+    content  = file("${path.module}/functions/pkg/boto3_helpers.py")
     filename = "boto3_helpers.py"
   }
 }
@@ -136,7 +136,7 @@ resource "aws_lambda_function" "main" {
   description   = "Updates an ECS service"
 
   role             = aws_iam_role.main.arn
-  handler          = "manager.lambda_handler"
+  handler          = "pkg.manager.lambda_handler"
   source_code_hash = data.archive_file.main.output_base64sha256
   runtime          = "python3.7"
   timeout          = 120
