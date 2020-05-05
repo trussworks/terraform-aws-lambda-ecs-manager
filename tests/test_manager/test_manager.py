@@ -44,8 +44,10 @@ class TestLambdaHandler:
     )
     def test_required_fields(self, test_input, expected, mocker):
         mocker.patch.dict(manager.__DISPATCH__, {})
+        mock_log = mocker.patch.object(manager, "log")
         result = manager.lambda_handler(test_input)
 
+        assert mock_log.call_count == 2
         assert result == expected
 
     @_pytest.mark.parametrize(
@@ -74,6 +76,7 @@ class TestLambdaHandler:
         self, test_input, expected, mocker, result_with_body
     ):
         mocker.patch("time.time", return_value=100)
+        mock_log = mocker.patch.object(manager, "log")
         mock_runtask = mocker.patch.object(
             manager, "_runtask", return_value=result_with_body
         )
@@ -83,3 +86,4 @@ class TestLambdaHandler:
 
         mock_runtask.assert_called_once_with(test_input["body"])
         assert result == expected
+        assert mock_log.call_count == 2
