@@ -231,6 +231,7 @@ def _generate_container_definition(
         if container_definition["name"] == container_name:
             break
     else:
+        log(container_definition)
         raise KeyError(f"Definition for container {container_name} not found.")
 
     container_definition["logConfiguration"]["options"][
@@ -534,21 +535,23 @@ def lambda_handler(
         command = event["command"]
         body = event["body"]
     except KeyError:
-        err = _missing_required_keys(["command", "body"], list(event))
-        log(msg=err["msg"], data=err["data"])
-        return {"msg": err["msg"], "data": err["data"]}
-
-    response = {"request_payload": {"command": command, "body": body}}
+        err_msg: Dict[str, str]
+        err_msg = _missing_required_keys(["command", "body"], list(event))
+        log(**err_msg)
+        return err_msg
 
     try:
         result = __DISPATCH__[command](body)  # type: ignore
     except KeyError:
-        return {
-            "msg": "Command not recognized: '{}'. Must be one of: {}".format(
-                command, list(__DISPATCH__)
-            )
+        err_msg = {
+            "msg": f"Command not recognized: '{command}'.",
+            "data": "Must be one of: {}".format(list(__DISPATCH__)),
         }
+        log(**err_msg)
+        return err_msg
     else:
+        response: Dict[str, Any]
+        response = {"request_payload": {"command": command, "body": body}}
         if result.exc:
             response.update(result.error)
         else:
