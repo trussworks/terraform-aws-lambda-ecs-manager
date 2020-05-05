@@ -540,9 +540,7 @@ def lambda_handler(
         log(**err_msg)
         return err_msg
 
-    try:
-        result = __DISPATCH__[command](body)  # type: ignore
-    except KeyError:
+    if command not in __DISPATCH__:
         err_msg = {
             "msg": f"Command not recognized: '{command}'.",
             "data": "Must be one of: {}".format(list(__DISPATCH__)),
@@ -550,6 +548,7 @@ def lambda_handler(
         log(**err_msg)
         return err_msg
     else:
+        result = __DISPATCH__[command](body)  # type: ignore
         response: Dict[str, Any]
         response = {"request_payload": {"command": command, "body": body}}
         response.update(result.error or result.body)
