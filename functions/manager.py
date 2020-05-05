@@ -424,21 +424,23 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         definitions.
 
     Returns:
-        Boto3Result with a list of ARNs of services that were updated.
-
-    Raises:
-        KeyError: If any key is missing from the body.
-
-        TypeError: If the service_ids value is not a list of strings, or any
-        other value is not a string.
+        Boto3Result with a list of ARNs of services that were updated, or an
+        error.
     """
     ecs_service = Dict[str, str]
 
     ecs: boto3.client = boto3.client("ecs")
 
-    cluster_id: str = cast(str, body["cluster_id"])
-    service_ids: List[str] = cast(List[str], body["service_ids"])
-    image: str = cast(str, body["image"])
+    cluster_id: str = cast(str, body.get("cluster_id"))
+    service_ids: List[str] = cast(List[str], body.get("service_ids"))
+    image: Union[str, List[str], None] = body.get("image")
+
+    if cluster_id is None or service_ids is None:
+        err_msg = _missing_required_keys(
+            ["cluster_id", "service_ids"], list(body)
+        )
+        log(*err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
 
     r = invoke(
         ecs.describe_services,
