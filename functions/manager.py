@@ -552,10 +552,7 @@ def lambda_handler(
     else:
         response: Dict[str, Any]
         response = {"request_payload": {"command": command, "body": body}}
-        if result.exc:
-            response.update(result.error)
-        else:
-            response.update(result.body)
+        response.update(result.error or result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
