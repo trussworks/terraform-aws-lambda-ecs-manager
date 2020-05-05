@@ -87,3 +87,50 @@ class TestLambdaHandler:
         mock_runtask.assert_called_once_with(test_input["body"])
         assert result == expected
         assert mock_log.call_count == 2
+
+    @_pytest.mark.parametrize(
+        ("test_input", "expected"),
+        [
+            (
+                {
+                    "body": {
+                        "cluster_id": "my_cluster_id",
+                        "service_id": "my_service_id",
+                    },
+                    "command": "deploy",
+                },
+                {
+                    "data": {
+                        "duration": "0 ms",
+                        "response": {
+                            "ResponseMetadata": {"HTTPStatusCode": "200"},
+                            "foo": "bar",
+                            "request_payload": {
+                                "body": {
+                                    "cluster_id": "my_cluster_id",
+                                    "service_id": "my_service_id",
+                                },
+                                "command": "deploy",
+                            },
+                        },
+                    },
+                    "msg": "response received",
+                },
+            )
+        ],
+    )
+    def test_deploy_dispatch(
+        self, test_input, expected, mocker, result_with_body
+    ):
+        mocker.patch("time.time", return_value=100)
+        mock_log = mocker.patch.object(manager, "log")
+        mock_deploy = mocker.patch.object(
+            manager, "_deploy", return_value=result_with_body
+        )
+        mocker.patch.dict(manager.__DISPATCH__, {"deploy": mock_deploy})
+
+        result = manager.lambda_handler(event=test_input, context=None)
+
+        mock_deploy.assert_called_once_with(test_input["body"])
+        assert result == expected
+        assert mock_log.call_count == 2
