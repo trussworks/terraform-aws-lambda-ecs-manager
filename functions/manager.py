@@ -539,11 +539,20 @@ def lambda_handler(
         return {"msg": err["msg"], "data": err["data"]}
 
     response = {"request_payload": {"command": command, "body": body}}
-    result = __DISPATCH__[command](body)  # type: ignore
-    if result.exc:
-        response.update(result.error)
+
+    try:
+        result = __DISPATCH__[command](body)  # type: ignore
+    except KeyError:
+        return {
+            "msg": "Command not found: {}. Must be one of: {}".format(
+                command, list(__DISPATCH__)
+            )
+        }
     else:
-        response.update(result.body)
+        if result.exc:
+            response.update(result.error)
+        else:
+            response.update(result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
