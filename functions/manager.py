@@ -544,7 +544,7 @@ def lambda_handler(
         result = __DISPATCH__[command](body)  # type: ignore
     except KeyError:
         return {
-            "msg": "Command not found: {}. Must be one of: {}".format(
+            "msg": "Command not recognized: '{}'. Must be one of: {}".format(
                 command, list(__DISPATCH__)
             )
         }
