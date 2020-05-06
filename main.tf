@@ -83,10 +83,7 @@ data "aws_iam_policy_document" "main" {
   statement {
     actions = ["iam:PassRole"]
 
-    resources = [
-      var.task_role_arn,
-      var.task_execution_role_arn,
-    ]
+    resources = concat(var.task_role_arns, var.task_execution_role_arns)
   }
 
   # allow reading ECS service details and creating task definitions
