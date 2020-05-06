@@ -16,8 +16,8 @@
  *   app_name    = var.app_name
  *   environment = var.environment
  *
- *   task_role_arn           = module.ecs_service_app.task_role_arn
- *   task_execution_role_arn = module.ecs_service_app.task_execution_role_arn
+ *   task_role_arns           = [module.ecs_service_app.task_role_arn]
+ *   task_execution_role_arns = [module.ecs_service_app.task_execution_role_arn]
  * }
  * ```
  */
@@ -62,10 +62,6 @@ resource "aws_iam_role" "main" {
   description        = "Allows Lambda functions to update ${local.taskdef_family} service container definitions."
   name               = "lambda-${var.app_name}-${var.environment}"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-}
-
-data "aws_arn" "task_arn" {
-  arn = var.task_role_arn
 }
 
 data "aws_iam_policy_document" "main" {
