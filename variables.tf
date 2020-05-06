@@ -9,12 +9,12 @@ variable "environment" {
 }
 
 variable "task_role_arns" {
-  type        = set(string)
+  type        = list(string)
   description = "ARNs of the IAM roles assumed by Amazon ECS container tasks."
 }
 
 variable "task_execution_role_arns" {
-  type        = set(string)
+  type        = list(string)
   description = "ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume."
 }
 
