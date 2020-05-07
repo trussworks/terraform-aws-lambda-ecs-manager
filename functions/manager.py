@@ -517,6 +517,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     success = {
         "ResponseMetadata": {"HTTPStatusCode": 200},
         "UpdatedServiceArns": updated_services,
+        "NewTaskdefArn": new_taskdef_arn,
     }
     return Boto3Result(response=success)
 
