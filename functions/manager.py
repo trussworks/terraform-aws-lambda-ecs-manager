@@ -111,6 +111,8 @@ class Boto3Result:
         if not isinstance(response, dict) and not isinstance(exc, Exception):
             raise Boto3InputError("At least one argument is required")
 
+        self.response = response
+
         if response is not None:
             self.status = response.get("ResponseMetadata", {}).get(
                 "HTTPStatusCode"
@@ -138,8 +140,8 @@ class Boto3Result:
             or self.status == str(HTTPStatus.OK.value)
         ):
             return {
-                "title": "HTTP status not OK.",
-                "message": f"http status was {self.status}",
+                "title": f"HTTP status not OK: {self.status}",
+                "message": {"response": self.response},
                 "traceback": None,
             }
         else:

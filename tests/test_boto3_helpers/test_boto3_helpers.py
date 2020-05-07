@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest as _pytest
 
 import functions.manager as manager
@@ -32,21 +34,30 @@ class TestBoto3Result:
             boto3result()
 
     def test_Boto3Result_with_http_failure(self):
-        result_with_http_failure = Boto3Result(
-            response={
-                "ResponseMetadata": {"HTTPStatusCode": "429"},
-                "foo": "bar",
-            }
-        )
-        assert result_with_http_failure.status == "429"
-        assert result_with_http_failure.body == {
+        response = {
             "ResponseMetadata": {"HTTPStatusCode": "429"},
             "foo": "bar",
         }
+        result_with_http_failure = Boto3Result(response=response)
+        assert result_with_http_failure.body == response
+        assert result_with_http_failure.status == "429"
         assert result_with_http_failure.exc is None
         assert result_with_http_failure.error == {
-            "message": "http status was 429",
-            "title": "HTTP status not OK.",
+            "message": {"response": response},
+            "title": "HTTP status not OK: 429",
+            "traceback": None,
+        }
+
+    def test_Boto3Result_with_failures(self):
+        """Sometimes the response will simply have a list of 'failures'."""
+        response = {"failures": [{"arn": "some_arn", "reason": "MISSING"}]}
+        result_with_failures = Boto3Result(response=response)
+        assert result_with_failures.body == response
+        assert result_with_failures.status != HTTPStatus.OK.value
+        assert result_with_failures.exc is None
+        assert result_with_failures.error == {
+            "message": {"response": response},
+            "title": "HTTP status not OK: None",
             "traceback": None,
         }
 
