@@ -42,8 +42,8 @@ def _missing_required_keys(
         TypeError if either argument is not a list.
         ValueError if all the required keys are present.
     """
-    if not all(
-        [isinstance(required_keys, list), isinstance(found_keys, list)]
+    if not isinstance(required_keys, list) and not isinstance(
+        found_keys, list
     ):
         raise TypeError("argument must be a list type")
 
