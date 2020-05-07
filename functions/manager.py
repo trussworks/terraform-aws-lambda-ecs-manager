@@ -493,7 +493,13 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
 
             taskdef["containerDefinitions"] = service_containerdefs
 
-            r = invoke(ecs.register_task_definition, **taskdef)
+            r = invoke(
+                ecs.register_task_definition,
+                **{
+                    "family": taskdef["family"],
+                    "containerDefinitions": [service_containerdefs],
+                },
+            )
             if r.error:
                 return r
 
