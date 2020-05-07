@@ -486,6 +486,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 data={
                     "taskdef": taskdef,
                     "service_containerdefs": taskdef["containerDefinitions"],
+                    "executionRoleArn": taskdef["executionRoleArn"],
                 },
             )
 
@@ -494,6 +495,8 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 **{
                     "family": taskdef["family"],
                     "containerDefinitions": taskdef["containerDefinitions"],
+                    "executionRoleArn": taskdef["executionRoleArn"],
+                    "taskRoleArn": taskdef["taskRoleArn"],
                 },
             )
             if r.error:
