@@ -28,6 +28,13 @@ class TestBoto3Result:
             key in result_with_exception.error
             for key in ("title", "message", "traceback")
         )
+        assert result_with_exception.error["title"] == "TestException"
+        assert result_with_exception.error["message"] == []
+        assert result_with_exception.error["traceback"][0] == [
+            "Traceback (most recent call last):",
+            "",
+        ]
+        assert len(result_with_exception.error["traceback"][0]) > 1
 
     def test_Boto3Result_with_neither(self, inputerror_exception, boto3result):
         with _pytest.raises(inputerror_exception):
