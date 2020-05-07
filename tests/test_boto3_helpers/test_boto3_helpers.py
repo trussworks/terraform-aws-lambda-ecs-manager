@@ -111,20 +111,40 @@ class TestUpdateService:
             },
         )
 
+    @_pytest.mark.parametrize(
+        ("update_service_args", "expected_invoke_args"),
+        [
+            (
+                {
+                    "service_name": "some_service_name",
+                    "cluster_id": "some_cluster",
+                },
+                {
+                    "cluster": "some_cluster",
+                    "forceNewDeployment": False,
+                    "service": "some_service_name",
+                    "taskDefinition": None,
+                },
+            )
+        ],
+    )
     def test_update_service_exc(
-        self, mocker, fake_ecs_client, result_with_exception
+        self,
+        mocker,
+        fake_ecs_client,
+        result_with_exception,
+        args,
+        expected_invoke_args,
     ):
         fake_invoke = mocker.patch.object(
             manager, "invoke", return_value=result_with_exception
         )
 
-        result = manager.update_service(
-            ecs_client=fake_ecs_client,
-            service_name="some_service_name",
-            cluster_id="some_cluster",
-        )
+        result = manager.update_service(ecs_client=fake_ecs_client, **args)
 
-        fake_invoke.assert_called_once()
+        fake_invoke.assert_called_once_with(
+            fake_ecs_client.update_service, **expected_invoke_args
+        )
         assert isinstance(result, Boto3Result)
         assert isinstance(result.body, dict)
         assert result.body == {}
