@@ -497,6 +497,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                     "containerDefinitions": taskdef["containerDefinitions"],
                     "executionRoleArn": taskdef["executionRoleArn"],
                     "taskRoleArn": taskdef["taskRoleArn"],
+                    "networkMode": taskdef["networkMode"],
                     "requiresCompatibilities": taskdef[
                         "requiresCompatibilities"
                     ],
