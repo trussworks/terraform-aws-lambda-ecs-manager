@@ -478,26 +478,22 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         else:
             # register a modified task definition with the new container
             # definitions
-            service_containerdefs = taskdef["containerDefinitions"].copy()
-
-            for containerdef in service_containerdefs:
+            for containerdef in taskdef["containerDefinitions"]:
                 containerdef.update(image=image)
 
             log(
                 msg="Re-deploying service with updated container definitions",
                 data={
                     "taskdef": taskdef,
-                    "service_containerdefs": service_containerdefs,
+                    "service_containerdefs": taskdef["containerDefinitions"],
                 },
             )
-
-            taskdef["containerDefinitions"] = service_containerdefs
 
             r = invoke(
                 ecs.register_task_definition,
                 **{
                     "family": taskdef["family"],
-                    "containerDefinitions": [service_containerdefs],
+                    "containerDefinitions": taskdef["containerDefinitions"],
                 },
             )
             if r.error:
