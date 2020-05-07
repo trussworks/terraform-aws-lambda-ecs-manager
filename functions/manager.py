@@ -491,7 +491,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 },
             )
 
-            taskdef.update(service_containerdefs)
+            taskdef["containerDefinitions"] = service_containerdefs
 
             r = invoke(ecs.register_task_definition, **taskdef)
             if r.error:
