@@ -133,14 +133,16 @@ class TestUpdateService:
         mocker,
         fake_ecs_client,
         result_with_exception,
-        args,
+        update_service_args,
         expected_invoke_args,
     ):
         fake_invoke = mocker.patch.object(
             manager, "invoke", return_value=result_with_exception
         )
 
-        result = manager.update_service(ecs_client=fake_ecs_client, **args)
+        result = manager.update_service(
+            ecs_client=fake_ecs_client, **update_service_args
+        )
 
         fake_invoke.assert_called_once_with(
             fake_ecs_client.update_service, **expected_invoke_args
