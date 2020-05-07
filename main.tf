@@ -92,6 +92,7 @@ data "aws_iam_policy_document" "main" {
       "ecs:DescribeTaskDefinition",
       "ecs:RegisterTaskDefinition",
       "ecs:RunTask",
+      "ecs:UpdateService",
     ]
 
     resources = ["*"]
