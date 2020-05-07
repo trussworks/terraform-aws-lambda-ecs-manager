@@ -29,7 +29,7 @@ class TestBoto3Result:
             for key in ("title", "message", "traceback")
         )
         assert result_with_exception.error["title"] == "TestException"
-        assert result_with_exception.error["message"] == []
+        assert result_with_exception.error["message"] == ""
         assert result_with_exception.error["traceback"][0] == [
             "Traceback (most recent call last):",
             "",

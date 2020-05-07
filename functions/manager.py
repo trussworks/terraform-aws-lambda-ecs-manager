@@ -132,7 +132,7 @@ class Boto3Result:
             )
             return {
                 "title": type(self.exc).__name__,
-                "message": [line.split("\n") for line in str(self.exc)],
+                "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
         elif not (
