@@ -420,9 +420,9 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         names or ARNs.
 
         image: The fully qualified image:tag pair that will be deployed into
-        each container definition in the service. If this is None, the services
-        in service_ids will be restarted without changes to their container
-        definitions.
+        each container definition in each service. If this is None, the
+        services in service_ids will be restarted without changes to their
+        container definitions.
 
     Returns:
         Boto3Result with a list of ARNs of services that were updated, or an
