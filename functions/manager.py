@@ -131,7 +131,7 @@ class Boto3Result:
             return {
                 "title": type(self.exc).__name__,
                 "message": str(self.exc),
-                "traceback": list(tb.format()),
+                "traceback": [line.split("\n") for line in tb.format()],
             }
         elif not (
             self.status == HTTPStatus.OK.value
@@ -152,8 +152,7 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
     Arguments:
         boto3_function: A callable to be called. Typically this will be a
             function in the boto3 module.
-        **kwargs: A dictionary of arguments to pass when calling the
-            boto3_function.
+        **kwargs: Arguments to pass when calling the boto3_function.
 
     Returns:
         Boto3Result: If any exception was raised by the boto3_function call,
