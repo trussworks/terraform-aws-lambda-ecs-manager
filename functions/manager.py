@@ -471,6 +471,10 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         if not image:
             # redeploy the service with the same task definition
             new_taskdef_arn: str = taskdef["taskDefinitionArn"]
+            log(
+                "Re-deploying service with existing task definition",
+                new_taskdef_arn,
+            )
         else:
             # register a modified task definition with the new container
             # definitions
@@ -478,6 +482,14 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
 
             for containerdef in service_containerdefs:
                 containerdef.update(image=image)
+
+            log(
+                msg="Re-deploying service with updated container definitions",
+                data={
+                    "taskdef": taskdef,
+                    "service_containerdefs": service_containerdefs,
+                },
+            )
 
             taskdef.update(service_containerdefs)
 
