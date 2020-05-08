@@ -275,10 +275,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         task definition will be changed to this value before the task is
         started.
     """
-    try:
-        taskdef_entrypoint = body["entrypoint"]
-    except KeyError:
-        taskdef_entrypoint = None
+    taskdef_entrypoint = body.get("entrypoint")
 
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
