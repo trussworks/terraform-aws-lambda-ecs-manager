@@ -461,7 +461,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
 
     cluster_id: str = cast(str, body.get("cluster_id"))
     service_ids: List[str] = cast(List[str], body.get("service_ids"))
-    image: Union[str, List[str], None] = body.get("image")
+    image: Optional[str] = cast(str, body.get("image"))
 
     if cluster_id is None or service_ids is None:
         err_msg = _missing_required_keys(
