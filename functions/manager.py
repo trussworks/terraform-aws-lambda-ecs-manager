@@ -172,7 +172,18 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
 def register_task_definition(
     ecs_client: boto3.client, taskdef: Dict[str, Any]
 ) -> Boto3Result:
-    """Register a new task definition, iterating on an existing one."""
+    """Register a new task definition, iterating on an existing one.
+
+    Arguments:
+        ecs_client:
+            A boto3 ecs client object to connect.
+        taskdef:
+            A dictionary representation of the task definition to be
+            registered.
+
+    Returns:
+        Boto3Result
+    """
     return invoke(
         ecs_client.register_task_definition,
         **{
