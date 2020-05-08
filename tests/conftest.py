@@ -1,5 +1,8 @@
+import json
+
 import pytest as _pytest
 
+import functions.manager as manager
 from functions.manager import Boto3Error, Boto3InputError, Boto3Result
 
 
@@ -57,3 +60,14 @@ def result_with_exception(test_exception):
 @_pytest.fixture
 def fake_ecs_client(mocker):
     return mocker.MagicMock()
+
+
+@_pytest.fixture
+def mock_invoke(mocker):
+    return mocker.patch.object(manager, "invoke", autospec=True)
+
+
+@_pytest.fixture
+def fake_taskdef():
+    with open("tests/sample_task_definition.json") as f:
+        return json.load(f)

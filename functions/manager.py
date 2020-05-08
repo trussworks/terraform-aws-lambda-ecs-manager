@@ -169,6 +169,25 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
         return Boto3Result(response=r or {})
 
 
+def register_task_definition(
+    ecs_client: boto3.client, taskdef: Dict[str, Any]
+) -> Boto3Result:
+    """Register a new task definition, iterating on an existing one."""
+    return invoke(
+        ecs_client.register_task_definition,
+        **{
+            "family": taskdef["family"],
+            "containerDefinitions": taskdef["containerDefinitions"],
+            "executionRoleArn": taskdef["executionRoleArn"],
+            "taskRoleArn": taskdef["taskRoleArn"],
+            "networkMode": taskdef["networkMode"],
+            "cpu": taskdef["cpu"],
+            "memory": taskdef["memory"],
+            "requiresCompatibilities": taskdef["requiresCompatibilities"],
+        },
+    )
+
+
 def update_service(
     ecs_client: boto3.client,
     service_name: str,
@@ -490,21 +509,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 },
             )
 
-            r = invoke(
-                ecs.register_task_definition,
-                **{
-                    "family": taskdef["family"],
-                    "containerDefinitions": taskdef["containerDefinitions"],
-                    "executionRoleArn": taskdef["executionRoleArn"],
-                    "taskRoleArn": taskdef["taskRoleArn"],
-                    "networkMode": taskdef["networkMode"],
-                    "cpu": taskdef["cpu"],
-                    "memory": taskdef["memory"],
-                    "requiresCompatibilities": taskdef[
-                        "requiresCompatibilities"
-                    ],
-                },
-            )
+            r = register_task_definition(ecs, taskdef)
             if r.error:
                 return r
 

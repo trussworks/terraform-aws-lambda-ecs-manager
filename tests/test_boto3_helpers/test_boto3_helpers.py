@@ -158,3 +158,27 @@ class TestUpdateService:
         assert isinstance(result.body, dict)
         assert result.body == {}
         assert isinstance(result.exc, Exception)
+
+
+class TestRegisterTaskdefinition:
+    def test_invoked_with_required_args(
+        self, fake_ecs_client, mock_invoke, fake_taskdef
+    ):
+
+        manager.register_task_definition(fake_ecs_client, fake_taskdef)
+
+        mock_invoke.assert_called_once_with(
+            fake_ecs_client.register_task_definition,
+            **{
+                "family": fake_taskdef["family"],
+                "containerDefinitions": fake_taskdef["containerDefinitions"],
+                "executionRoleArn": fake_taskdef["executionRoleArn"],
+                "taskRoleArn": fake_taskdef["taskRoleArn"],
+                "networkMode": fake_taskdef["networkMode"],
+                "cpu": fake_taskdef["cpu"],
+                "memory": fake_taskdef["memory"],
+                "requiresCompatibilities": fake_taskdef[
+                    "requiresCompatibilities"
+                ],
+            },
+        )
