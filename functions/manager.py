@@ -444,12 +444,12 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         container definitions.
 
     Returns:
-        Boto3Result with a list of ARNs of services that were updated, or an
-        error.
+        Boto3Result with a list of ARNs of services that were updated & the
+        ARN of the task definition they were updated with, or an error.
     """
     ecs_service = Dict[str, str]
 
-    ecs: boto3.client = boto3.client("ecs")
+    ecs_client: boto3.client = boto3.client("ecs")
 
     cluster_id: str = cast(str, body.get("cluster_id"))
     service_ids: List[str] = cast(List[str], body.get("service_ids"))
@@ -463,7 +463,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         return Boto3Result(exc=KeyError(err_msg))
 
     r = invoke(
-        ecs.describe_services,
+        ecs_client.describe_services,
         **{"cluster": cluster_id, "services": service_ids},
     )
     if r.error:
@@ -481,7 +481,8 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     for service in target_services:
         taskdef_arn = service["taskDefinition"]
         r = invoke(
-            ecs.describe_task_definition, **{"taskDefinition": taskdef_arn}
+            ecs_client.describe_task_definition,
+            **{"taskDefinition": taskdef_arn},
         )
         if r.error:
             return r
@@ -509,7 +510,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 },
             )
 
-            r = register_task_definition(ecs, taskdef)
+            r = register_task_definition(ecs_client, taskdef)
             if r.error:
                 return r
 
@@ -517,7 +518,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             log("Registered task definition", new_taskdef_arn)
 
         r = update_service(
-            ecs_client=ecs,
+            ecs_client=ecs_client,
             cluster_id=cluster_id,
             service_name=service["serviceName"],
             taskdef_id=new_taskdef_arn,
