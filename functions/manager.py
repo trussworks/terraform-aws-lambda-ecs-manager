@@ -282,9 +282,8 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         body: A dictionary with the command body.
 
     Keys:
-        taskdef_entrypoint: If set, the entryPoint command field in the ECS
-        task definition will be changed to this value before the task is
-        started.
+        entrypoint: If set, the entryPoint command field in the ECS task
+        definition will be changed to this value before the task is started.
     """
     taskdef_entrypoint = body.get("entrypoint")
 
