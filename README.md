@@ -47,6 +47,48 @@ module "ecs_manager" {
 | lambda\_function | ARN of the lambda function. |
 | log\_group | CloudWatch log group the lambda logs to. |
 
+## Invoking the lambda
+
+You can invoke the deployed ecs-manager lambda using aws-cli and the
+`environment` input you used when importing the module:
+
+```console
+aws lambda invoke --function-name "<environment>-ecs-manager" --payload payload.json output.json
+```
+
+### Deploy an image
+
+To deploy a new image into each of the containers in a list of services:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": ["app-service1", "app-service2"],
+        "image": "repo.url/app-service:test"
+    }
+}
+```
+
+This will find the services "app-service1" and "app-service2" in "app-cluster",
+registering new task definitions for each service with _all_ the images in each
+container definition set to `repo.url/app-service:test`. It then restarts the
+services.
+
+If the "image" key is omitted, services will be restarted in-place without any changes
+to the task definition:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": ["app-service1", "app-service2"]
+    }
+}
+```
+
 ## Development
 
 Set up the environment:
