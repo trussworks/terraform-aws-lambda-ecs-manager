@@ -16,8 +16,8 @@
  *   app_name    = var.app_name
  *   environment = var.environment
  *
- *   task_role_arn           = module.ecs_service_app.task_role_arn
- *   task_execution_role_arn = module.ecs_service_app.task_execution_role_arn
+ *   task_role_arns           = [module.ecs_service_app.task_role_arn]
+ *   task_execution_role_arns = [module.ecs_service_app.task_execution_role_arn]
  * }
  * ```
  */
@@ -64,10 +64,6 @@ resource "aws_iam_role" "main" {
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
-data "aws_arn" "task_arn" {
-  arn = var.task_role_arn
-}
-
 data "aws_iam_policy_document" "main" {
   # allow writing cloudwatch logs
   statement {
@@ -83,10 +79,7 @@ data "aws_iam_policy_document" "main" {
   statement {
     actions = ["iam:PassRole"]
 
-    resources = [
-      var.task_role_arn,
-      var.task_execution_role_arn,
-    ]
+    resources = concat(var.task_role_arns, var.task_execution_role_arns)
   }
 
   # allow reading ECS service details and creating task definitions
@@ -99,6 +92,7 @@ data "aws_iam_policy_document" "main" {
       "ecs:DescribeTaskDefinition",
       "ecs:RegisterTaskDefinition",
       "ecs:RunTask",
+      "ecs:UpdateService",
     ]
 
     resources = ["*"]
@@ -117,8 +111,12 @@ resource "aws_iam_role_policy" "main" {
 
 data "archive_file" "main" {
   type        = "zip"
-  source_file = "${path.module}/functions/manager.py"
   output_path = "${path.module}/functions/manager.zip"
+
+  source {
+    content  = file("${path.module}/functions/manager.py")
+    filename = "manager.py"
+  }
 }
 
 resource "aws_lambda_function" "main" {

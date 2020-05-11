@@ -1,5 +1,8 @@
+import json
+
 import pytest as _pytest
 
+import functions.manager as manager
 from functions.manager import Boto3Error, Boto3InputError, Boto3Result
 
 
@@ -35,11 +38,8 @@ def test_function():
 
 
 @_pytest.fixture
-def test_exception_raiser():
-    def foo():
-        raise Boto3Error
-
-    return foo
+def test_exception_raiser(mocker):
+    return mocker.Mock(side_effect=Boto3Error("test_error"))
 
 
 @_pytest.fixture
@@ -55,3 +55,19 @@ def result_with_exception(test_exception):
         raise test_exception
     except test_exception as te:
         return Boto3Result(response=None, exc=te)
+
+
+@_pytest.fixture
+def fake_ecs_client(mocker):
+    return mocker.MagicMock()
+
+
+@_pytest.fixture
+def mock_invoke(mocker):
+    return mocker.patch.object(manager, "invoke", autospec=True)
+
+
+@_pytest.fixture
+def fake_taskdef():
+    with open("tests/sample_task_definition.json") as f:
+        return json.load(f)

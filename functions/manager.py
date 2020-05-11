@@ -6,7 +6,8 @@ import sys
 import time
 import traceback
 import types
-from typing import Any, Dict, List, Optional, Union
+from http import HTTPStatus
+from typing import Any, Dict, List, Optional, Union, cast
 
 import boto3
 
@@ -41,8 +42,8 @@ def _missing_required_keys(
         TypeError if either argument is not a list.
         ValueError if all the required keys are present.
     """
-    if not all(
-        [isinstance(required_keys, list), isinstance(found_keys, list)]
+    if not isinstance(required_keys, list) and not isinstance(
+        found_keys, list
     ):
         raise TypeError("argument must be a list type")
 
@@ -110,6 +111,8 @@ class Boto3Result:
         if not isinstance(response, dict) and not isinstance(exc, Exception):
             raise Boto3InputError("At least one argument is required")
 
+        self.response = response
+
         if response is not None:
             self.status = response.get("ResponseMetadata", {}).get(
                 "HTTPStatusCode"
@@ -123,17 +126,26 @@ class Boto3Result:
 
     def _get_error_msg(self) -> Dict[str, Any]:
         """Return the response stacktrace, if any."""
-        if self.exc is None:
+        if self.exc:
+            tb = traceback.TracebackException.from_exception(
+                self.exc, capture_locals=True
+            )
+            return {
+                "title": type(self.exc).__name__,
+                "message": str(self.exc),
+                "traceback": [line.split("\n") for line in tb.format()],
+            }
+        elif not (
+            self.status == HTTPStatus.OK.value
+            or self.status == str(HTTPStatus.OK.value)
+        ):
+            return {
+                "title": f"HTTP status not OK: {self.status}",
+                "message": {"response": self.response},
+                "traceback": None,
+            }
+        else:
             return {}
-
-        tb = traceback.TracebackException.from_exception(
-            self.exc, capture_locals=True
-        )
-        return {
-            "title": type(self.exc).__name__,
-            "message": str(self.exc),
-            "traceback": list(tb.format()),
-        }
 
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
@@ -142,8 +154,7 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
     Arguments:
         boto3_function: A callable to be called. Typically this will be a
             function in the boto3 module.
-        **kwargs: A dictionary of arguments to pass when calling the
-            boto3_function.
+        **kwargs: Arguments to pass when calling the boto3_function.
 
     Returns:
         Boto3Result: If any exception was raised by the boto3_function call,
@@ -158,10 +169,80 @@ def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
         return Boto3Result(response=r or {})
 
 
+def register_task_definition(
+    ecs_client: boto3.client, taskdef: Dict[str, Any]
+) -> Boto3Result:
+    """Register a new task definition, iterating on an existing one.
+
+    Arguments:
+        ecs_client:
+            A boto3 ecs client object to connect.
+        taskdef:
+            A dictionary representation of the task definition to be
+            registered.
+
+    Returns:
+        Boto3Result
+    """
+    return invoke(
+        ecs_client.register_task_definition,
+        **{
+            "family": taskdef["family"],
+            "containerDefinitions": taskdef["containerDefinitions"],
+            "executionRoleArn": taskdef["executionRoleArn"],
+            "taskRoleArn": taskdef["taskRoleArn"],
+            "networkMode": taskdef["networkMode"],
+            "cpu": taskdef["cpu"],
+            "memory": taskdef["memory"],
+            "requiresCompatibilities": taskdef["requiresCompatibilities"],
+        },
+    )
+
+
+def update_service(
+    ecs_client: boto3.client,
+    service_name: str,
+    cluster_id: str,
+    taskdef_id: Optional[str] = None,
+    force_new_deployment: bool = False,
+) -> Boto3Result:
+    """Update an ECS service.
+
+    Arguments:
+        ecs_client: A boto3 ecs client object to connect.
+
+        service_name: The name of the service to update. Required.
+
+        cluster_id: The name or ARN of the cluster the service is running on.
+
+        taskdef_id: The 'family:revision' or ARN of the task definition to run
+        in the service being updated. If a revision is not specified, the
+        latest ACTIVE revision is used.
+
+        force_new_deployment: Performs a new deployment when there were no
+        service definition changes. For example, the service can use a new
+        Docker image with the same image/tag combination (imagename:latest) or
+        to roll Fargate tasks onto a newer platform version.
+
+    Returns:
+        Boto3Result
+    """
+    new_service_definitions = {
+        "cluster": cluster_id,
+        "service": service_name,
+        "taskDefinition": taskdef_id,
+        "forceNewDeployment": force_new_deployment,
+    }
+    if taskdef_id:
+        new_service_definitions["taskDefinition"] = taskdef_id
+
+    return invoke(ecs_client.update_service, **new_service_definitions)
+
+
 def _generate_container_definition(
-    taskdef: Dict[str, Any], container_name: str, command: str
+    taskdef: Dict[str, Any], container_name: str, entrypoint: str
 ) -> Dict[str, Any]:
-    """Create a definition to run the given command on the given container.
+    """Create a definition to run the given entrypoint on the given container.
 
     Arguments:
         taskdef:
@@ -169,8 +250,8 @@ def _generate_container_definition(
         container_name:
             name of the container to use as a template for the new
             container definition
-        command:
-            new command for the container definition
+        entrypoint:
+            new entryPoint for the container definition
 
     Raises:
         KeyError:
@@ -181,25 +262,31 @@ def _generate_container_definition(
         if container_definition["name"] == container_name:
             break
     else:
+        log(container_definition)
         raise KeyError(f"Definition for container {container_name} not found.")
 
     container_definition["logConfiguration"]["options"][
         "awslogs-stream-prefix"
     ] = "lambda"
     container_definition.update(
-        command=command,
+        command=entrypoint,
         portMappings=[],  # nothing should connect to this container
     )
     return container_definition  # type: ignore
 
 
-def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
+def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command.
 
     Arguments:
-        taskdef_command: If set, the entryPoint command field in the ECS task
+        body: A dictionary with the command body.
+
+    Keys:
+        entrypoint: If set, the entryPoint command field in the ECS task
         definition will be changed to this value before the task is started.
     """
+    taskdef_entrypoint = body.get("entrypoint")
+
     _environment = os.environ["ENVIRONMENT"]
     _cluster = os.environ["ECS_CLUSTER"]
     _service = os.environ["ECS_SERVICE"]
@@ -210,18 +297,18 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
     r = invoke(
         ecs.describe_services, **{"cluster": _cluster, "services": [_service]}
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     netconf = r.body["services"][0]["networkConfiguration"]
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
-    if taskdef_command:
+    if taskdef_entrypoint:
         _container_name = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
-        if r.exc:
-            return Boto3Result(exc=r.exc)
+        if r.error:
+            return r
         service_taskdef = r.body["taskDefinition"]
 
         # create and register a custom task definition by modifying the
@@ -232,7 +319,7 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
                 "family": taskdef_family,
                 "containerDefinitions": [
                     _generate_container_definition(
-                        service_taskdef, _container_name, taskdef_command
+                        service_taskdef, _container_name, taskdef_entrypoint
                     )
                 ],
                 "executionRoleArn": service_taskdef["executionRoleArn"],
@@ -245,8 +332,8 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
                 ],
             },
         )
-        if r.exc:
-            return Boto3Result(exc=r.exc)
+        if r.error:
+            return r
         target_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
         log(msg="Created task definition", data=target_taskdef_arn)
     else:
@@ -264,22 +351,22 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
         },
     )
     new_task_arn = r.body["tasks"][0]["taskArn"]
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     log(msg="Running task", data=new_task_arn)
 
     # wait for the task to finish
     r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
     log(msg="Finished waiting for task execution", data=new_task_arn)
 
     # inspect task result
     r = invoke(
         ecs.describe_tasks, **{"cluster": _cluster, "tasks": [new_task_arn]}
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
+    if r.error:
+        return r
 
     if r.body["failures"]:
         return Boto3Result(
@@ -298,13 +385,13 @@ def _runtask(taskdef_command: Union[str, None]) -> Boto3Result:
     }
     task_status.update({"exitCode": container_description["exitCode"]})
 
-    return Boto3Result(
-        response={
-            "taskArn": new_task_arn,
-            "taskDefinitionArn": target_taskdef_arn,
-            "taskStatus": task_status,
-        }
-    )
+    success = {
+        "ResponseMetadata": {"HTTPStatusCode": 200},
+        "taskArn": new_task_arn,
+        "taskDefinitionArn": target_taskdef_arn,
+        "taskStatus": task_status,
+    }
+    return Boto3Result(response=success)
 
 
 def _task_wait(
@@ -342,24 +429,137 @@ def _task_wait(
             "WaiterConfig": {"Delay": delay, "MaxAttempts": attempts},
         },
     )
-    if r.exc:
-        return Boto3Result(exc=r.exc)
-    else:
-        return Boto3Result(response={})
+    return r
 
 
-__DISPATCH__ = {"runtask": _runtask}
+def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
+    """Deploy containers on an ECS service.
+
+    Arguments:
+        body: A dictionary with the following elements.
+
+    Keys:
+        cluster_id: Name or ARN of of the cluster that hosts the services to
+        deploy.
+
+        service_ids: A list of services to deploy the image into. Can be short
+        names or ARNs.
+
+        image: The fully qualified image:tag pair that will be deployed into
+        each container definition in each service. If this is None, the
+        services in service_ids will be restarted without changes to their
+        container definitions.
+
+    Returns:
+        Boto3Result with a list of ARNs of services that were updated & the
+        ARN of the task definition they were updated with, or an error.
+    """
+    ecs_service = Dict[str, str]
+
+    ecs_client: boto3.client = boto3.client("ecs")
+
+    cluster_id: str = cast(str, body.get("cluster_id"))
+    service_ids: List[str] = cast(List[str], body.get("service_ids"))
+    image: Optional[str] = cast(str, body.get("image"))
+
+    if cluster_id is None or service_ids is None:
+        err_msg = _missing_required_keys(
+            ["cluster_id", "service_ids"], list(body)
+        )
+        log(*err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    r = invoke(
+        ecs_client.describe_services,
+        **{"cluster": cluster_id, "services": service_ids},
+    )
+    if r.error:
+        return r
+    described_services: List[ecs_service] = r.body["services"]
+
+    target_services: List[ecs_service] = [
+        svc
+        for svc in described_services
+        if svc["serviceName"] in service_ids
+        or svc["serviceArn"] in service_ids
+    ]
+
+    updated_services: List[str] = []
+    for service in target_services:
+        taskdef_arn = service["taskDefinition"]
+        r = invoke(
+            ecs_client.describe_task_definition,
+            **{"taskDefinition": taskdef_arn},
+        )
+        if r.error:
+            return r
+        taskdef = r.body["taskDefinition"]
+
+        if not image:
+            # redeploy the service with the same task definition
+            new_taskdef_arn: str = taskdef["taskDefinitionArn"]
+            log(
+                "Re-deploying service with existing task definition",
+                new_taskdef_arn,
+            )
+        else:
+            # register a modified task definition with the new container
+            # definitions
+            for containerdef in taskdef["containerDefinitions"]:
+                containerdef.update(image=image)
+
+            log(
+                msg="Re-deploying service with updated container definitions",
+                data={
+                    "taskdef": taskdef,
+                    "service_containerdefs": taskdef["containerDefinitions"],
+                    "executionRoleArn": taskdef["executionRoleArn"],
+                },
+            )
+
+            r = register_task_definition(ecs_client, taskdef)
+            if r.error:
+                return r
+
+            new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
+            log("Registered task definition", new_taskdef_arn)
+
+        r = update_service(
+            ecs_client=ecs_client,
+            cluster_id=cluster_id,
+            service_name=service["serviceName"],
+            taskdef_id=new_taskdef_arn,
+            force_new_deployment=True,
+        )
+        if r.error:
+            return r
+        else:
+            service_arn: str = r.body["service"]["serviceArn"]
+            log("Updated service", service_arn)
+            updated_services.append(service_arn)
+
+    success = {
+        "ResponseMetadata": {"HTTPStatusCode": 200},
+        "UpdatedServiceArns": updated_services,
+        "NewTaskdefArn": new_taskdef_arn,
+    }
+    return Boto3Result(response=success)
+
+
+__DISPATCH__ = {"runtask": _runtask, "deploy": _deploy}
 
 
 def lambda_handler(
-    event: Dict[str, str], context: Any = None
+    event: Dict[str, Any], context: Any = None
 ) -> Dict[str, Any]:
     """Define a Lambda function entry-point.
 
     Takes an dictionary event, processes it, and logs a response message.
 
     Args:
-        event: A dictionary with an optional command.
+        event: A dictionary with a command and body to pass to the command
+        handler.
+
         context: This is ignored.
 
     Raises:
@@ -375,16 +575,23 @@ def lambda_handler(
         command = event["command"]
         body = event["body"]
     except KeyError:
-        err = _missing_required_keys(["command", "body"], list(event))
-        log(msg=err["msg"], data=err["data"])
-        return {"msg": err["msg"], "data": err["data"]}
+        err_msg: Dict[str, str]
+        err_msg = _missing_required_keys(["command", "body"], list(event))
+        log(**err_msg)
+        return err_msg
 
-    response = {"request_payload": {"command": command, "body": body}}
-    result = __DISPATCH__[command](body)
-    if result.exc:
-        response.update(result.error)
+    if command not in __DISPATCH__:
+        err_msg = {
+            "msg": f"Command not recognized: '{command}'.",
+            "data": "Must be one of: {}".format(list(__DISPATCH__)),
+        }
+        log(**err_msg)
+        return err_msg
     else:
-        response.update(result.body)
+        result = __DISPATCH__[command](body)  # type: ignore
+        response: Dict[str, Any]
+        response = {"request_payload": {"command": command, "body": body}}
+        response.update(result.error or result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
     log(
