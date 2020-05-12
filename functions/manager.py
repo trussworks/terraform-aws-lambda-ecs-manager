@@ -122,9 +122,9 @@ class Boto3Result:
 
         self.body: Dict[str, Any] = response or {}
         self.exc: Optional[Exception] = exc
-        self.error: Dict[str, Any] = self._get_error_msg()
 
-    def _get_error_msg(self) -> Dict[str, Any]:
+    @property
+    def error(self) -> Dict[str, Any]:
         """Return the response stacktrace, if any."""
         if self.exc:
             tb = traceback.TracebackException.from_exception(
