@@ -52,7 +52,7 @@ def result_with_body():
 @_pytest.fixture
 def result_with_exception(test_exception):
     try:
-        raise test_exception
+        raise test_exception("Test exception")
     except test_exception as te:
         return Boto3Result(response=None, exc=te)
 
