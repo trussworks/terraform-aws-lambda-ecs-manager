@@ -148,6 +148,10 @@ class Boto3Result:
         else:
             return {}
 
+    def __repr__(self) -> str:
+        """Return a printable string representation of the object."""
+        return repr(self.error) if self.error else repr(self.body)
+
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
     """Call a function and return the response as a Boto3Result.
