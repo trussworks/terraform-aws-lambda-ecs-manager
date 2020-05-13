@@ -32,6 +32,7 @@ flake8-comprehensions = "^3.2.2"
 flake8-eradicate = "^0.3.0"
 flake8-fixme = "^1.1.1"
 flake8-print = "^3.1.4"
+pytest-icdiff = "^0.5"
 
 [tool.black]
 line-length = 79
