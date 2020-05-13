@@ -112,16 +112,20 @@ class Boto3Result:
             raise Boto3InputError("At least one argument is required")
 
         self.response = response
-
-        if response is not None:
-            self.status = response.get("ResponseMetadata", {}).get(
-                "HTTPStatusCode"
-            )
-        else:
-            self.status = None
-
         self.body: Dict[str, Any] = response or {}
         self.exc: Optional[Exception] = exc
+
+    @property
+    def status(self) -> Optional[str]:
+        """Return the HTTPStatusCode from the response, if it can be found."""
+        if self.response is not None:
+            status_code: str
+            status_code = self.response.get("ResponseMetadata", {}).get(
+                "HTTPStatusCode"
+            )
+            return status_code
+        else:
+            return None
 
     @property
     def error(self) -> Dict[str, Any]:
@@ -135,10 +139,7 @@ class Boto3Result:
                 "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
-        elif not (
-            self.status == HTTPStatus.OK.value
-            or self.status == str(HTTPStatus.OK.value)
-        ):
+        elif not self.status == str(HTTPStatus.OK.value):
             return {
                 "title": f"HTTP status not OK: {self.status}",
                 "message": {"response": self.response},
