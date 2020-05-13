@@ -97,7 +97,7 @@ class Boto3Result:
         """Instance constructor.
 
         If an exception is passed, provide a dictionary representation of the
-        traceback. Otherwise, return the response object.
+        traceback. Otherwise, store the response as an instance property.
 
         Arguments:
             response: dict with a response message.
