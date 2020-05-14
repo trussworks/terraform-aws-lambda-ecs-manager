@@ -21,7 +21,7 @@ LOGGER.addHandler(STDOUT_HANDLER)
 
 def log(msg: str = "", data: Any = None, level: str = "debug") -> None:
     """Log a structured message to the console."""
-    j = json.dumps({"message": msg, "data": data})
+    j = json.dumps({"message": msg, "data": data}, default=str)
     getattr(LOGGER, level)(f"{j}")
 
 
