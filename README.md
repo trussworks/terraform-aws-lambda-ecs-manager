@@ -70,7 +70,8 @@ from a given service and/or task definition family:
 }
 ```
 
-To find if any containers are unhealthy, exited non-zero, or reported any failures, this `jq` query can help:
+To find if any containers are unhealthy, exited non-zero, or reported any
+failures, this `jq` query can help:
 
 ```console
 jq '.data.response.message.tasks |
@@ -81,6 +82,10 @@ jq '.data.response.message.tasks |
         )
     )' < output.json
 ```
+
+It will print a boolean indicating if errors were found: `false` means the
+queried services' statuses are OK, while `true` means at least one problem was
+found.
 
 ### Deploy an image
 
