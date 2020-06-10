@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 import types
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Union, cast
 
@@ -279,6 +280,116 @@ def _generate_container_definition(
     return container_definition  # type: ignore
 
 
+def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
+    """Report the status of the tasks in a given task family.
+
+    Pagination is not supported: up to 100 tasks will be returned.
+
+    Arguments:
+        body: A dictionary with the command body.
+
+    Keys:
+        cluster: The short name or full Amazon Resource Name (ARN) of the
+        cluster that hosts the tasks to list. Required.
+
+        family: The name of the family with which to filter the results.
+
+        serviceName: The name of the service with which to filter the results.
+        Specifying a service_name limits the results to tasks that belong to
+        that service.
+
+    Raises:
+        Boto3InputError: If cluster_id is not set or is not a string.
+    """
+    if not isinstance(body.get("cluster"), str):
+        err_msg = _missing_required_keys(["cluster"], list(body))
+        log(*err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    task_filters = {
+        key: body.get(key)
+        for key in ["cluster", "family", "serviceName"]
+        if body.get(key)
+    }
+
+    ecs_client = boto3.client("ecs")
+
+    # By default, list_tasks only returns RUNNING tasks. We have to call it
+    # twice if we want STOPPED tasks also.
+    task_filters.update(desiredStatus="RUNNING")
+    r_running = invoke(ecs_client.list_tasks, **task_filters)
+    if r_running.error:
+        return r_running
+
+    task_filters.update(desiredStatus="STOPPED")
+    r_stopped = invoke(ecs_client.list_tasks, **task_filters)
+    if r_stopped.error:
+        return r_stopped
+
+    task_arns: List[Optional[str]] = r_running.body.get(
+        "taskArns", []
+    ) + r_stopped.body.get("taskArns", [])
+
+    if task_arns:
+        r = invoke(
+            ecs_client.describe_tasks,
+            **{"cluster": body.get("cluster"), "tasks": task_arns},
+        )
+        if r.error:
+            return r
+    else:
+        return Boto3Result(
+            response={
+                "msg": "No task ARNs were found with the given criteria.",
+                "data": None,
+            }
+        )
+
+    task_statuses: List[Dict[str, str]] = []
+    for task in r.body["tasks"]:
+        task_status = {
+            key: task.get(key).isoformat()
+            if isinstance(task.get(key), datetime)
+            else task.get(key)
+            for key in [
+                "taskArn",
+                "taskDefinitionArn",
+                "connectivity",
+                "healthStatus",
+                "desiredStatus",
+                "lastStatus",
+                "startedAt",
+                "stopCode",
+                "stoppedReason",
+                "executionStoppedAt",
+                "failures",
+            ]
+        }
+
+        container_statuses: List[Dict[str, str]]
+        container_statuses = []
+        for container in task["containers"]:
+            container_statuses.append(
+                {
+                    key: container.get(key)
+                    for key in [
+                        "containerArn",
+                        "image",
+                        "lastStatus",
+                        "exitCode",
+                        "reason",
+                        "healthStatus",
+                    ]
+                }
+            )
+
+        task_status["containers"] = container_statuses
+
+        task_statuses.append(task_status)
+
+    return Boto3Result(response={"tasks": task_statuses})
+
+
 def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command.
 
@@ -354,9 +465,9 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
             "startedBy": "lambda",
         },
     )
-    new_task_arn = r.body["tasks"][0]["taskArn"]
     if r.error:
         return r
+    new_task_arn = r.body["tasks"][0]["taskArn"]
     log(msg="Running task", data=new_task_arn)
 
     # wait for the task to finish
@@ -550,7 +661,11 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     return Boto3Result(response=success)
 
 
-__DISPATCH__ = {"runtask": _runtask, "deploy": _deploy}
+__DISPATCH__ = {
+    "runtask": _runtask,
+    "deploy": _deploy,
+    "healthcheck": _healthcheck,
+}
 
 
 def lambda_handler(
