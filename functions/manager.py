@@ -390,7 +390,7 @@ def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
 
         task_statuses.append(task_status)
 
-    return Boto3Result(response={"tasks": task_statuses})
+    return Boto3Result({"tasks": task_statuses})
 
 
 def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
