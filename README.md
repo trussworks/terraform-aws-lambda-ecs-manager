@@ -56,6 +56,32 @@ You can invoke the deployed ecs-manager lambda using aws-cli and the
 aws lambda invoke --function-name "<environment>-ecs-manager" --payload payload.json output.json
 ```
 
+### Get a status report on tasks
+
+ecs-manager can produce a report on the status of running and stopped tasks
+from a given service and/or task definition family:
+
+```json
+{
+    "command": "healthcheck",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_name": "app-service1"
+}
+```
+
+To find if any containers are unhealthy, exited non-zero, or reported any failures, this `jq` query can help:
+
+```console
+jq '.data.response.message.tasks |
+    any(
+        (.failures | length > 0)
+        or (
+            .containers | any(.exitCode > 0 or .healthStatus == "UNHEALTHY")
+        )
+    )' < output.json
+```
+
 ### Deploy an image
 
 To deploy a new image into each of the containers in a list of services:
