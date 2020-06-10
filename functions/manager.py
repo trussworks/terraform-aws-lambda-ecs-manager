@@ -324,17 +324,20 @@ def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
     if r_running.error:
         return r_running
 
-    # there is a race here: if a task has stopped after the first list_tasks
-    # call finished, but before the second call finished, it may appear in the
-    # results twice
     task_filters.update(desiredStatus="STOPPED")
     r_stopped = invoke(ecs_client.list_tasks, **task_filters)
     if r_stopped.error:
         return r_stopped
 
-    task_arns: List[Optional[str]] = r_running.body.get(
-        "taskArns", []
-    ) + r_stopped.body.get("taskArns", [])
+    # there is a race here: if a task has stopped after the first list_tasks
+    # call finished, but before the second call finished, it may appear in the
+    # results twice. Therefore, we de-duplicate the list of task ARNs
+    task_arns: List[Optional[str]] = list(
+        set(
+            r_running.body.get("taskArns", [])
+            + r_stopped.body.get("taskArns", [])
+        )
+    )
 
     if task_arns:
         r = invoke(
