@@ -369,8 +369,7 @@ def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
             ]
         }
 
-        container_statuses: List[Dict[str, str]]
-        container_statuses = []
+        container_statuses: List[Dict[str, str]] = []
         for container in task["containers"]:
             container_statuses.append(
                 {
