@@ -298,6 +298,9 @@ def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
         Specifying a service_name limits the results to tasks that belong to
         that service.
 
+    Returns:
+        Boto3Result with a status report on the given service(s), or an error.
+
     Raises:
         Boto3InputError: If cluster_id is not set or is not a string.
     """
