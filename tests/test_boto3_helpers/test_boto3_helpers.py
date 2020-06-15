@@ -1,3 +1,4 @@
+import ast
 from http import HTTPStatus
 
 import pytest as _pytest
@@ -29,7 +30,7 @@ class TestBoto3Result:
             for key in ("title", "message", "traceback")
         )
         assert result_with_exception.error["title"] == "TestException"
-        assert result_with_exception.error["message"] == ""
+        assert result_with_exception.error["message"] == "Test exception"
         assert result_with_exception.error["traceback"][0] == [
             "Traceback (most recent call last):",
             "",
@@ -67,6 +68,15 @@ class TestBoto3Result:
             "title": "HTTP status not OK: None",
             "traceback": None,
         }
+
+    def test_Boto3Result_repr(self, result_with_body, result_with_exception):
+        r = "{'ResponseMetadata': {'HTTPStatusCode': '200'}, 'foo': 'bar'}"
+        assert repr(result_with_body) == r
+
+        result_dict = ast.literal_eval(repr(result_with_exception))
+        assert result_dict.get("title") == "TestException"
+        assert result_dict.get("message") == "Test exception"
+        assert isinstance(result_dict.get("traceback"), list)
 
 
 class TestInvoke:

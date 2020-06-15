@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 import types
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Union, cast
 
@@ -21,7 +22,7 @@ LOGGER.addHandler(STDOUT_HANDLER)
 
 def log(msg: str = "", data: Any = None, level: str = "debug") -> None:
     """Log a structured message to the console."""
-    j = json.dumps({"message": msg, "data": data})
+    j = json.dumps({"message": msg, "data": data}, default=str)
     getattr(LOGGER, level)(f"{j}")
 
 
@@ -97,7 +98,7 @@ class Boto3Result:
         """Instance constructor.
 
         If an exception is passed, provide a dictionary representation of the
-        traceback. Otherwise, return the response object.
+        traceback. Otherwise, store the response as an instance property.
 
         Arguments:
             response: dict with a response message.
@@ -112,19 +113,22 @@ class Boto3Result:
             raise Boto3InputError("At least one argument is required")
 
         self.response = response
-
-        if response is not None:
-            self.status = response.get("ResponseMetadata", {}).get(
-                "HTTPStatusCode"
-            )
-        else:
-            self.status = None
-
         self.body: Dict[str, Any] = response or {}
         self.exc: Optional[Exception] = exc
-        self.error: Dict[str, Any] = self._get_error_msg()
 
-    def _get_error_msg(self) -> Dict[str, Any]:
+    @property
+    def status(self) -> Optional[str]:
+        """Return the HTTPStatusCode from the response, if it can be found."""
+        if self.response is not None:
+            status_code = self.response.get("ResponseMetadata", {}).get(
+                "HTTPStatusCode"
+            )
+            return str(status_code)
+        else:
+            return None
+
+    @property
+    def error(self) -> Dict[str, Any]:
         """Return the response stacktrace, if any."""
         if self.exc:
             tb = traceback.TracebackException.from_exception(
@@ -135,10 +139,7 @@ class Boto3Result:
                 "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
-        elif not (
-            self.status == HTTPStatus.OK.value
-            or self.status == str(HTTPStatus.OK.value)
-        ):
+        elif self.status != str(HTTPStatus.OK.value):
             return {
                 "title": f"HTTP status not OK: {self.status}",
                 "message": {"response": self.response},
@@ -146,6 +147,10 @@ class Boto3Result:
             }
         else:
             return {}
+
+    def __repr__(self) -> str:
+        """Return a printable string representation of the object."""
+        return repr(self.error) if self.error else repr(self.body)
 
 
 def invoke(boto3_function: types.FunctionType, **kwargs: Any) -> Boto3Result:
@@ -275,6 +280,124 @@ def _generate_container_definition(
     return container_definition  # type: ignore
 
 
+def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
+    """Report the status of the tasks in a given task family.
+
+    Pagination is not supported: up to 100 tasks will be returned.
+
+    Arguments:
+        body: A dictionary with the command body.
+
+    Keys:
+        cluster: The short name or full Amazon Resource Name (ARN) of the
+        cluster that hosts the tasks to list. Required.
+
+        family: The name of the family with which to filter the results.
+
+        serviceName: The name of the service with which to filter the results.
+        Specifying a service_name limits the results to tasks that belong to
+        that service.
+
+    Returns:
+        Boto3Result with a status report on the given service(s), or an error.
+
+    Raises:
+        Boto3InputError: If cluster_id is not set or is not a string.
+    """
+    if not isinstance(body.get("cluster"), str):
+        err_msg = _missing_required_keys(["cluster"], list(body))
+        log(*err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    task_filters = {
+        key: body.get(key)
+        for key in ["cluster", "family", "serviceName"]
+        if body.get(key)
+    }
+
+    ecs_client = boto3.client("ecs")
+
+    # By default, list_tasks only returns RUNNING tasks. We have to call it
+    # twice if we want STOPPED tasks also.
+    task_filters.update(desiredStatus="RUNNING")
+    r_running = invoke(ecs_client.list_tasks, **task_filters)
+    if r_running.error:
+        return r_running
+
+    task_filters.update(desiredStatus="STOPPED")
+    r_stopped = invoke(ecs_client.list_tasks, **task_filters)
+    if r_stopped.error:
+        return r_stopped
+
+    # there is a race here: if a task has stopped after the first list_tasks
+    # call finished, but before the second call finished, it may appear in the
+    # results twice. Therefore, we de-duplicate the list of task ARNs
+    task_arns: List[Optional[str]] = list(
+        set(
+            r_running.body.get("taskArns", [])
+            + r_stopped.body.get("taskArns", [])
+        )
+    )
+
+    if task_arns:
+        r = invoke(
+            ecs_client.describe_tasks,
+            **{"cluster": body.get("cluster"), "tasks": task_arns},
+        )
+        if r.error:
+            return r
+    else:
+        return Boto3Result(
+            response={
+                "msg": "No task ARNs were found with the given criteria.",
+                "data": None,
+            }
+        )
+
+    task_statuses: List[Dict[str, str]] = []
+    for task in r.body["tasks"]:
+        task_status = {
+            key: task.get(key).isoformat()
+            if isinstance(task.get(key), datetime)
+            else task.get(key)
+            for key in [
+                "taskArn",
+                "taskDefinitionArn",
+                "connectivity",
+                "healthStatus",
+                "desiredStatus",
+                "lastStatus",
+                "startedAt",
+                "stopCode",
+                "stoppedReason",
+                "executionStoppedAt",
+                "failures",
+            ]
+        }
+
+        container_statuses: List[Dict[str, str]] = []
+        for container in task["containers"]:
+            container_statuses.append(
+                {
+                    key: container.get(key)
+                    for key in [
+                        "containerArn",
+                        "image",
+                        "lastStatus",
+                        "exitCode",
+                        "reason",
+                        "healthStatus",
+                    ]
+                }
+            )
+
+        task_status["containers"] = container_statuses
+
+        task_statuses.append(task_status)
+
+    return Boto3Result({"tasks": task_statuses})
+
+
 def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     """Runs an ECS service optionally updating the task command.
 
@@ -350,9 +473,9 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
             "startedBy": "lambda",
         },
     )
-    new_task_arn = r.body["tasks"][0]["taskArn"]
     if r.error:
         return r
+    new_task_arn = r.body["tasks"][0]["taskArn"]
     log(msg="Running task", data=new_task_arn)
 
     # wait for the task to finish
@@ -546,7 +669,11 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     return Boto3Result(response=success)
 
 
-__DISPATCH__ = {"runtask": _runtask, "deploy": _deploy}
+__DISPATCH__ = {
+    "runtask": _runtask,
+    "deploy": _deploy,
+    "healthcheck": _healthcheck,
+}
 
 
 def lambda_handler(
