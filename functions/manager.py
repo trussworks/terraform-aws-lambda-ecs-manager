@@ -600,7 +600,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         log(*err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 
-    if secrets and isinstance(secrets, List):
+    if secrets and isinstance(secrets, list):
         try:
             engines = [re.compile(pattern) for pattern in secrets]
         except re.error as e:
@@ -609,8 +609,8 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         return Boto3Result(exc=TypeError("secrets value must be of type list"))
 
     ssm_client = boto3.client("ssm")
-    next_token: Optional[str] = ""  # noqa S105
-    ssm_parameters: List[Optional[Dict[str, Any]]] = []
+    next_token: Optional[str] = " "
+    ssm_parameters: List[Dict[str, Any]] = []
     while next_token is not None:
         r = invoke(
             ssm_client.describe_parameters,
