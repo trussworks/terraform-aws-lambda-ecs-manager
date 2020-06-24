@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 import sys
 import time
 import traceback
@@ -573,6 +574,10 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         services in service_ids will be restarted without changes to their
         container definitions.
 
+        secrets: A list of regular expressions to match against SSM Parameter
+        names. Matching Parameters will be included in the task definition if,
+        and only if, they also have an object tag with the key ENV_VAR_NAME.
+
     Returns:
         Boto3Result with a list of ARNs of services that were updated & the
         ARN of the task definition they were updated with, or an error.
@@ -584,6 +589,9 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     cluster_id: str = cast(str, body.get("cluster_id"))
     service_ids: List[str] = cast(List[str], body.get("service_ids"))
     image: Optional[str] = cast(str, body.get("image"))
+    secrets: Optional[List[str]] = cast(
+        Optional[List[str]], body.get("secrets")
+    )
 
     if cluster_id is None or service_ids is None:
         err_msg = _missing_required_keys(
@@ -591,6 +599,37 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         )
         log(*err_msg)
         return Boto3Result(exc=KeyError(err_msg))
+
+    if secrets and isinstance(secrets, List):
+        try:
+            engines = [re.compile(pattern) for pattern in secrets]
+        except re.error as e:
+            return Boto3Result(exc=e)
+    elif secrets and not isinstance(secrets, list):
+        return Boto3Result(exc=TypeError("secrets value must be of type list"))
+
+    ssm_client = boto3.client("ssm")
+    next_token: Optional[str] = ""  # noqa S105
+    ssm_parameters: List[Optional[Dict[str, Any]]] = []
+    while next_token is not None:
+        r = invoke(
+            ssm_client.describe_parameters,
+            **{"MaxResults": 50, "NextToken": next_token},
+        )
+        if r.error:
+            return r
+        else:
+            ssm_parameters += [
+                parameter
+                for parameter in r.body.get("Parameters", [])
+                if any(
+                    engine.fullmatch(parameter.get("Name"))
+                    for engine in engines
+                )
+                # and parameter.get("Type") != "StringList"
+                # and parameter.get("DataType") == "string"
+            ]
+            next_token = r.body.get("NextToken")
 
     r = invoke(
         ecs_client.describe_services,
