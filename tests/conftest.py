@@ -63,8 +63,21 @@ def fake_ecs_client(mocker):
 
 
 @_pytest.fixture
-def mock_invoke(mocker):
-    return mocker.patch.object(manager, "invoke", autospec=True)
+def mock_ssm_client(mocker):
+    return mocker.MagicMock()
+
+
+@_pytest.fixture
+def mock_invoke(mocker, result_with_body):
+    return mocker.patch.object(
+        manager, "invoke", autospec=True, return_value=result_with_body
+    )
+
+
+@_pytest.fixture
+def fake_ssm_stored_parameters():
+    with open("tests/data/ssm_parameters_stored.json") as f:
+        return json.load(f)
 
 
 @_pytest.fixture

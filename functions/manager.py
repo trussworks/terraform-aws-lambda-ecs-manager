@@ -556,6 +556,56 @@ def _task_wait(
     return r
 
 
+def _map_ecs_ssm_parameters(
+    ssm_client: boto3.client, stored_parameters: List[Dict[str, Any]]
+) -> Boto3Result:
+    """Map ECS parameters from a list of SSM Parameters.
+
+    Read SSM tags for the given parameters and map those that have tag keyed
+    `ENV_VAR_NAME`. Discard any Parameters that do not have such a tag.
+
+    Arguments:
+        ssm_client: A boto3.client("ssm") object.
+
+        stored_parameters: A list of SSM Parameters.
+
+    Returns:
+        Boto3Result with a list of Paramater -> ENV_VAR_NAME pairings in
+        dict format, suitable for conclusion in an ECS containerDefinition.
+    """
+    for parameter in stored_parameters:
+        r = invoke(
+            ssm_client.list_tags_for_resource,
+            **{
+                "ResourceType": "Parameter",
+                "ResourceId": parameter.get("Name"),
+            },
+        )
+        if r.error:
+            return r
+        else:
+            parameter["Tags"] = r.body.get("TagList", [])
+            tag_list = list(
+                filter(
+                    lambda tag: tag.get("Key") == "ENV_VAR_NAME",
+                    parameter["Tags"],
+                )
+            )
+            if len(tag_list) > 0:
+                parameter["ENV_VAR_NAME"] = tag_list[0].get("Value")
+
+    env_var_map: List[Optional[Dict[str, str]]] = [
+        {
+            "name": parameter.get("Name", ""),
+            "valueFrom": parameter.get("ENV_VAR_NAME", ""),
+        }
+        for parameter in stored_parameters
+        if parameter.get("ENV_VAR_NAME")
+    ]
+
+    return Boto3Result(response={"map": env_var_map})
+
+
 def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     """Deploy containers on an ECS service.
 
@@ -631,6 +681,12 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             ]
             next_token = r.body.get("NextToken", "")
 
+    r = _map_ecs_ssm_parameters(ssm_client, ssm_parameters)
+    if r.error:
+        return r
+    else:
+        secrets_map: List[Dict[str, str]] = r.body["map"]
+
     r = invoke(
         ecs_client.describe_services,
         **{"cluster": cluster_id, "services": service_ids},
@@ -655,21 +711,17 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         )
         if r.error:
             return r
-        taskdef = r.body["taskDefinition"]
+        taskdef = r.body["taskDefinition"].copy()
 
-        if not image:
-            # redeploy the service with the same task definition
-            new_taskdef_arn: str = taskdef["taskDefinitionArn"]
-            log(
-                "Re-deploying service with existing task definition",
-                new_taskdef_arn,
-            )
-        else:
-            # register a modified task definition with the new container
-            # definitions
-            for containerdef in taskdef["containerDefinitions"]:
+        # compute a modified task definition with the new container
+        # definitions and secrets, if any
+        for containerdef in taskdef["containerDefinitions"]:
+            if secrets:
+                containerdef.update(secrets=secrets_map)
+            if image:
                 containerdef.update(image=image)
 
+        if taskdef != r.body["taskDefinition"]:
             log(
                 msg="Re-deploying service with updated container definitions",
                 data={
@@ -682,9 +734,15 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             r = register_task_definition(ecs_client, taskdef)
             if r.error:
                 return r
+            else:
+                log(
+                    "Registered task definition",
+                    r.body["taskDefinition"]["taskDefinitionArn"],
+                )
 
-            new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
-            log("Registered task definition", new_taskdef_arn)
+        # if we registered a new task definition, 'r' is the response from the
+        # register_task_definition call. otherwise, 'r' is the describe call
+        new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
 
         r = update_service(
             ecs_client=ecs_client,
