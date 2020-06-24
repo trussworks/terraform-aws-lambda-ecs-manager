@@ -140,7 +140,7 @@ class Boto3Result:
                 "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
-        elif self.status != str(HTTPStatus.OK.value):
+        elif self.status and self.status != str(HTTPStatus.OK.value):
             return {
                 "title": f"HTTP status not OK: {self.status}",
                 "message": {"response": self.response},
