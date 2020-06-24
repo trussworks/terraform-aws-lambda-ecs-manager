@@ -609,9 +609,9 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         return Boto3Result(exc=TypeError("secrets value must be of type list"))
 
     ssm_client = boto3.client("ssm")
-    next_token: Optional[str] = " "
+    next_token: str = " "
     ssm_parameters: List[Dict[str, Any]] = []
-    while next_token is not None:
+    while next_token:
         r = invoke(
             ssm_client.describe_parameters,
             **{"MaxResults": 50, "NextToken": next_token},
@@ -629,7 +629,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 # and parameter.get("Type") != "StringList"
                 # and parameter.get("DataType") == "string"
             ]
-            next_token = r.body.get("NextToken")
+            next_token = r.body.get("NextToken", "")
 
     r = invoke(
         ecs_client.describe_services,
