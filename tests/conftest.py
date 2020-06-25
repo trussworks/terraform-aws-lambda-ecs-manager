@@ -58,7 +58,7 @@ def result_with_exception(test_exception):
 
 
 @_pytest.fixture
-def fake_ecs_client(mocker):
+def mock_ecs_client(mocker):
     return mocker.MagicMock()
 
 
