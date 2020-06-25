@@ -3,13 +3,13 @@ version: 2.1
 jobs:
   lint_and_test_python:
     docker:
-      - image: python:3.7-buster
+      - image: circleci-docker-primary:540071e99807185ec96d01240a3926da5da18457
     steps:
       - checkout
       - run:
           name: Install build & test dependencies
           command: |
-            pip3 install --progress-bar off 'poetry==1.0.5' 'pre-commit==2.2.0'
+            pip3 install --progress-bar off 'poetry==1.0.5'
             poetry config --no-interaction virtualenvs.create false
       - run:
           name: Build & install
