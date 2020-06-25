@@ -100,13 +100,7 @@ class TestInvoke:
 
 
 class TestUpdateService:
-    def test_update_service(self, mocker, mock_ecs_client):
-        fake_invoke = mocker.patch.object(
-            manager,
-            "invoke",
-            return_value=Boto3Result({"response": "a_response"}),
-        )
-
+    def test_update_service(self, mocker, mock_ecs_client, mock_invoke):
         result = manager.update_service(
             ecs_client=mock_ecs_client,
             service_name="some_service_name",
@@ -118,7 +112,7 @@ class TestUpdateService:
         assert isinstance(result.body, dict)
         assert result.exc is None
 
-        fake_invoke.assert_called_once_with(
+        mock_invoke.assert_called_once_with(
             mock_ecs_client.update_service,
             **{
                 "service": "some_service_name",
@@ -149,19 +143,18 @@ class TestUpdateService:
         self,
         mocker,
         mock_ecs_client,
+        mock_invoke,
         result_with_exception,
         update_service_args,
         expected_invoke_args,
     ):
-        fake_invoke = mocker.patch.object(
-            manager, "invoke", return_value=result_with_exception
-        )
+        mock_invoke.return_value = result_with_exception
 
         result = manager.update_service(
             ecs_client=mock_ecs_client, **update_service_args
         )
 
-        fake_invoke.assert_called_once_with(
+        mock_invoke.assert_called_once_with(
             mock_ecs_client.update_service, **expected_invoke_args
         )
         assert isinstance(result, Boto3Result)
