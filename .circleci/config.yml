@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   lint_and_test_python:
     docker:
-      - image: circleci-docker-primary:540071e99807185ec96d01240a3926da5da18457
+      - image: trussworks/circleci-docker-primary:540071e99807185ec96d01240a3926da5da18457
     steps:
       - checkout
       - run:
