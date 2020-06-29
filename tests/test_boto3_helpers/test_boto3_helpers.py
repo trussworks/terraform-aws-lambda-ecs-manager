@@ -69,6 +69,12 @@ class TestBoto3Result:
             "traceback": None,
         }
 
+    def test_Boto3Result_empty_http_status(self):
+        """Make sure we don't print an error if there's no HTTP status code."""
+        response = {"ResponseMetadata": {"HTTPStatusCode": None}}
+        result = Boto3Result(response=response)
+        assert result.error == {}
+
     def test_Boto3Result_repr(self, result_with_body, result_with_exception):
         r = "{'ResponseMetadata': {'HTTPStatusCode': '200'}, 'foo': 'bar'}"
         assert repr(result_with_body) == r
