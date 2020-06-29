@@ -140,6 +140,12 @@ class Boto3Result:
                 "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
+        elif (self.response or {}).get("failures"):
+            return {
+                "title": "Response included failures",
+                "message": (self.response or {}).get("failures"),
+                "traceback": None,
+            }
         elif (
             self.status
             and str(self.status) != "None"

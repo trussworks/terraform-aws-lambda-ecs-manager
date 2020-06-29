@@ -64,8 +64,8 @@ class TestBoto3Result:
         assert result_with_failures.status != HTTPStatus.OK.value
         assert result_with_failures.exc is None
         assert result_with_failures.error == {
-            "message": {"response": response},
-            "title": "HTTP status not OK: None",
+            "message": [{"arn": "some_arn", "reason": "MISSING"}],
+            "title": "Response included failures",
             "traceback": None,
         }
 
