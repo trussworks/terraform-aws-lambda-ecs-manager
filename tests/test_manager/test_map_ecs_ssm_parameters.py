@@ -39,8 +39,6 @@ class TestMapECS:
 
             result_map = result.body.get("map", [None])
             if result_map:
-                assert result.body.get("map", [None])[0].get(
-                    "valueFrom"
-                ) == f_tags[0].get("Value")
+                assert result_map[0].get("name") == f_tags[0].get("Value")
             else:
                 assert result_map == []

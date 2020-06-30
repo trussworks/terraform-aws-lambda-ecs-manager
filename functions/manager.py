@@ -607,8 +607,8 @@ def _map_ecs_ssm_parameters(
 
     env_var_map: List[Optional[Dict[str, str]]] = [
         {
-            "name": parameter.get("Name", ""),
-            "valueFrom": parameter.get("ENV_VAR_NAME", ""),
+            "name": parameter.get("ENV_VAR_NAME", ""),
+            "valueFrom": parameter.get("Name", ""),
         }
         for parameter in stored_parameters
         if parameter.get("ENV_VAR_NAME")
