@@ -120,6 +120,59 @@ to the task definition:
 }
 ```
 
+#### SSM Parameters
+
+ecs-manager can add (or remove) secrets in an ECS task definition. Using the
+`secrets` key, pass in a list of regular expressions:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": [
+            "app-service1"
+        ],
+        "secrets": [
+            "^/app-service1/secrets/\\S+$"
+        ]
+    }
+}
+```
+
+For each of the SSM Parameters with names that match any regular expression in the list,
+the `ENV_VAR_NAME` object tag will be read. If it is found, the Parameter's value
+will be added to the container definitions. For example, a Parameter with this tag:
+
+```console
+$ aws ssm list-tags-for-resource --resource-type "Parameter" --resource-id 'secrets/test'
+{
+    "TagList": [
+        {
+            "Key": "ENV_VAR_NAME",
+            "Value": "TEST"
+        }
+    ]
+}
+```
+
+Will appear in the task definition like so:
+
+```json
+"secrets": [
+    {
+        "name": "TEST",
+        "valueFrom": "secrets/test"
+    }
+]
+```
+
+For more information, see [Tagging SSM documents], and the [Amazon ECS Developer
+Guide] on _Specifying Sensitive Data Using Systems Manager Parameter Store_.
+
+[Tagging SSM Documents]: https://docs.aws.amazon.com/systems-manager/latest/userguide/tagging-documents.html
+[Amazon ECS Developer Guide]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
+
 ## Development
 
 Set up the environment:
