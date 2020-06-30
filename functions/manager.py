@@ -1,4 +1,5 @@
 """Lambda function for managing ECS tasks and services."""
+import copy
 import json
 import logging
 import os
@@ -721,7 +722,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         )
         if r.error:
             return r
-        taskdef = r.body["taskDefinition"].copy()
+        taskdef = copy.deepcopy(r.body["taskDefinition"])
 
         # compute a modified task definition with the new container
         # definitions and secrets, if any
