@@ -10,7 +10,6 @@ jobs:
           name: Install build & test dependencies
           command: |
             pip3 install --progress-bar off 'poetry==1.0.9' 'pre-commit==2.2.0'
-            poetry config --no-interaction virtualenvs.create false
       - run:
           name: Build & install
           command: poetry build && poetry install
