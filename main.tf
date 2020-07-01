@@ -93,7 +93,6 @@ data "aws_iam_policy_document" "main" {
       "ecs:RegisterTaskDefinition",
       "ecs:RunTask",
       "ecs:UpdateService",
-      "ssm:GetParameters",
       "ssm:DescribeParameters",
       "ssm:ListTagsForResource",
     ]
