@@ -687,8 +687,6 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                     engine.fullmatch(parameter.get("Name"))
                     for engine in engines
                 )
-                # and parameter.get("Type") != "StringList"
-                # and parameter.get("DataType") == "string"
             ]
             next_token = r.body.get("NextToken", "")
 
