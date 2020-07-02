@@ -677,7 +677,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             ssm_client.get_parameters_by_path,
             **{
                 "Path": "/dev/easi-app/*",
-                "MaxResults": 50,
+                "MaxResults": 10,
                 "NextToken": next_token,
                 "WithDecryption": True,
             },
