@@ -101,8 +101,7 @@ data "aws_iam_policy_document" "main" {
 
   statement {
     actions = [
-      "ssm:GetParameters",
-      "ssm:DescribeParameters",
+      "ssm:GetParametersByPath",
       "ssm:ListTagsForResource",
     ]
 

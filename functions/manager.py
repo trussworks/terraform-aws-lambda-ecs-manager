@@ -674,8 +674,13 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     ssm_parameters: List[Dict[str, Any]] = []
     while next_token:
         r = invoke(
-            ssm_client.describe_parameters,
-            **{"MaxResults": 50, "NextToken": next_token},
+            ssm_client.get_parameters_by_path,
+            **{
+                "Path": "/dev/easi-app/*",
+                "MaxResults": 50,
+                "NextToken": next_token,
+                "WithDecryption": True,
+            },
         )
         if r.error:
             return r
