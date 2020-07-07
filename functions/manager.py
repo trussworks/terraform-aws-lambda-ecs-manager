@@ -661,40 +661,40 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         log(*err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 
-    if secrets and isinstance(secrets, list):
+    if secrets and not isinstance(secrets, list):
+        return Boto3Result(exc=TypeError("secrets value must be of type list"))
+    elif secrets and isinstance(secrets, list):
         try:
             engines = [re.compile(pattern) for pattern in secrets]
         except re.error as e:
             return Boto3Result(exc=e)
-    elif secrets and not isinstance(secrets, list):
-        return Boto3Result(exc=TypeError("secrets value must be of type list"))
 
-    ssm_client = boto3.client("ssm")
-    next_token: str = " "
-    ssm_parameters: List[Dict[str, Any]] = []
-    while next_token:
-        r = invoke(
-            ssm_client.describe_parameters,
-            **{"MaxResults": 50, "NextToken": next_token},
-        )
+        ssm_client = boto3.client("ssm")
+        next_token: str = " "
+        ssm_parameters: List[Dict[str, Any]] = []
+        while next_token:
+            r = invoke(
+                ssm_client.describe_parameters,
+                **{"MaxResults": 50, "NextToken": next_token},
+            )
+            if r.error:
+                return r
+            else:
+                ssm_parameters += [
+                    parameter
+                    for parameter in r.body.get("Parameters", [])
+                    if any(
+                        engine.fullmatch(parameter.get("Name"))
+                        for engine in engines
+                    )
+                ]
+                next_token = r.body.get("NextToken", "")
+
+        r = _map_ecs_ssm_parameters(ssm_client, ssm_parameters)
         if r.error:
             return r
         else:
-            ssm_parameters += [
-                parameter
-                for parameter in r.body.get("Parameters", [])
-                if any(
-                    engine.fullmatch(parameter.get("Name"))
-                    for engine in engines
-                )
-            ]
-            next_token = r.body.get("NextToken", "")
-
-    r = _map_ecs_ssm_parameters(ssm_client, ssm_parameters)
-    if r.error:
-        return r
-    else:
-        secrets_map: List[Dict[str, str]] = r.body["map"]
+            secrets_map: List[Dict[str, str]] = r.body["map"]
 
     r = invoke(
         ecs_client.describe_services,
