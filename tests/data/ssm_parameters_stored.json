@@ -1,0 +1,33 @@
+[
+    {
+        "Name": "/APP_ENV/appname/tagged_var",
+        "Type": "SecureString",
+        "KeyId": "alias/aws/ssm",
+        "LastModifiedDate": "2020-05-27 12:54:15.446000-04:00",
+        "LastModifiedUser": "__user_arn__",
+        "Description": "1",
+        "Version": 1,
+        "Tier": "Standard",
+        "Policies": [],
+        "DataType": "text",
+        "fake_tags": [
+            {
+                "Key": "ENV_VAR_NAME",
+                "Value": "APP_ENV"
+            }
+        ]
+    },
+    {
+        "Name": "/APP_ENV/appname/untagged_var",
+        "Type": "SecureString",
+        "KeyId": "alias/aws/ssm",
+        "LastModifiedDate": "2020-04-01 19:48:10.962000-04:00",
+        "LastModifiedUser": "__user_arn__",
+        "Description": "1",
+        "Version": 1,
+        "Tier": "Standard",
+        "Policies": [],
+        "DataType": "text",
+        "fake_tags": []
+    }
+]

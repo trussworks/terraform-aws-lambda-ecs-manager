@@ -64,10 +64,16 @@ class TestBoto3Result:
         assert result_with_failures.status != HTTPStatus.OK.value
         assert result_with_failures.exc is None
         assert result_with_failures.error == {
-            "message": {"response": response},
-            "title": "HTTP status not OK: None",
+            "message": [{"arn": "some_arn", "reason": "MISSING"}],
+            "title": "Response included failures",
             "traceback": None,
         }
+
+    def test_Boto3Result_empty_http_status(self):
+        """Make sure we don't print an error if there's no HTTP status code."""
+        response = {"ResponseMetadata": {"HTTPStatusCode": None}}
+        result = Boto3Result(response=response)
+        assert result.error == {}
 
     def test_Boto3Result_repr(self, result_with_body, result_with_exception):
         r = "{'ResponseMetadata': {'HTTPStatusCode': '200'}, 'foo': 'bar'}"
@@ -100,15 +106,9 @@ class TestInvoke:
 
 
 class TestUpdateService:
-    def test_update_service(self, mocker, fake_ecs_client):
-        fake_invoke = mocker.patch.object(
-            manager,
-            "invoke",
-            return_value=Boto3Result({"response": "a_response"}),
-        )
-
+    def test_update_service(self, mocker, mock_ecs_client, mock_invoke):
         result = manager.update_service(
-            ecs_client=fake_ecs_client,
+            ecs_client=mock_ecs_client,
             service_name="some_service_name",
             taskdef_id="some_taskdef_id",
             cluster_id="some_cluster",
@@ -118,8 +118,8 @@ class TestUpdateService:
         assert isinstance(result.body, dict)
         assert result.exc is None
 
-        fake_invoke.assert_called_once_with(
-            fake_ecs_client.update_service,
+        mock_invoke.assert_called_once_with(
+            mock_ecs_client.update_service,
             **{
                 "service": "some_service_name",
                 "cluster": "some_cluster",
@@ -148,21 +148,20 @@ class TestUpdateService:
     def test_update_service_exc(
         self,
         mocker,
-        fake_ecs_client,
+        mock_ecs_client,
+        mock_invoke,
         result_with_exception,
         update_service_args,
         expected_invoke_args,
     ):
-        fake_invoke = mocker.patch.object(
-            manager, "invoke", return_value=result_with_exception
-        )
+        mock_invoke.return_value = result_with_exception
 
         result = manager.update_service(
-            ecs_client=fake_ecs_client, **update_service_args
+            ecs_client=mock_ecs_client, **update_service_args
         )
 
-        fake_invoke.assert_called_once_with(
-            fake_ecs_client.update_service, **expected_invoke_args
+        mock_invoke.assert_called_once_with(
+            mock_ecs_client.update_service, **expected_invoke_args
         )
         assert isinstance(result, Boto3Result)
         assert isinstance(result.body, dict)
@@ -172,13 +171,13 @@ class TestUpdateService:
 
 class TestRegisterTaskdefinition:
     def test_invoked_with_required_args(
-        self, fake_ecs_client, mock_invoke, fake_taskdef
+        self, mock_ecs_client, mock_invoke, fake_taskdef
     ):
 
-        manager.register_task_definition(fake_ecs_client, fake_taskdef)
+        manager.register_task_definition(mock_ecs_client, fake_taskdef)
 
         mock_invoke.assert_called_once_with(
-            fake_ecs_client.register_task_definition,
+            mock_ecs_client.register_task_definition,
             **{
                 "family": fake_taskdef["family"],
                 "containerDefinitions": fake_taskdef["containerDefinitions"],

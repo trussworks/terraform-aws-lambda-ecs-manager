@@ -1,6 +1,6 @@
-# aws-lambda-ecs-manager
+# terraform-aws-lambda-ecs-manager
 
-Creates a lambda for managing ECS services in Fargate.
+Creates a Lambda to manage ECS services in Fargate.
 
 Creates the following resources:
 
@@ -11,16 +11,21 @@ Creates the following resources:
 
 ```hcl
 
-module "ecs_manager" {
+module "lambda_ecs_manager" {
   source = "../../../modules/aws-lambda-ecs-manager"
 
-  name        = "${var.name}"
-  environment = "${var.environment}"
+  app_name    = var.app_name
+  environment = var.environment
+  parameters = ["arn:aws:ssm:us-east-2:123456789012:parameter/prod-*"]
 
-  task_role_arn           = "${module.ecs_service_app.task_role_arn}"
-  task_execution_role_arn = "${module.ecs_service_app.task_execution_role_arn}"
+  task_role_arns           = [module.ecs_service_app.task_role_arn]
+  task_execution_role_arns = [module.ecs_service_app.task_execution_role_arn]
 }
 ```
+
+## Requirements
+
+No requirements.
 
 ## Providers
 
@@ -32,20 +37,28 @@ module "ecs_manager" {
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:-----:|
-| environment | n/a | `string` | n/a | yes |
+|------|-------------|------|---------|:--------:|
+| app\_name | Name of the application the Lambda is associated with. | `string` | n/a | yes |
+| environment | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
 | logs\_retention | Number of days to retain lambda events. | `string` | `"365"` | no |
-| name | n/a | `string` | n/a | yes |
-| task\_execution\_role\_arn | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `string` | n/a | yes |
-| task\_role\_arn | ARN of the IAM role assumed by Amazon ECS container tasks. | `string` | n/a | yes |
+| parameters | SSM Parameters the Lambda should be able to describe. | `list(string)` | `[]` | no |
+| publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
+| task\_execution\_role\_arns | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
+| task\_role\_arns | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| iam\_role | Name of the IAM role the lambda assumes. |
-| lambda\_function | ARN of the lambda function. |
+| iam\_role\_name | Name of the IAM role the lambda assumes. |
+| lambda\_function\_arn | ARN of the lambda function. |
+| last\_modified | The date this resource was last modified. |
 | log\_group | CloudWatch log group the lambda logs to. |
+| name | Name of the lambda function. |
+| qualified\_arn | The Amazon Resource Name (ARN) identifying your Lambda Function Version (if versioning is enabled via publish = true). |
+| source\_code\_hash | Base64-encoded representation of raw SHA-256 sum of the zip file. |
+| source\_code\_size | The size in bytes of the function .zip file. |
+| version | Published version of the lambda function. |
 
 ## Invoking the lambda
 
@@ -119,6 +132,59 @@ to the task definition:
     }
 }
 ```
+
+#### SSM Parameters
+
+ecs-manager can add (or remove) secrets in an ECS task definition. Using the
+`secrets` key, pass in a list of regular expressions:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": [
+            "app-service1"
+        ],
+        "secrets": [
+            "^/app-service1/secrets/\\S+$"
+        ]
+    }
+}
+```
+
+For each of the SSM Parameters with names that match any regular expression in the list,
+the `ENV_VAR_NAME` object tag will be read. If it is found, the Parameter's value
+will be added to the container definitions. For example, a Parameter with this tag:
+
+```console
+$ aws ssm list-tags-for-resource --resource-type "Parameter" --resource-id 'secrets/test'
+{
+    "TagList": [
+        {
+            "Key": "ENV_VAR_NAME",
+            "Value": "TEST"
+        }
+    ]
+}
+```
+
+Will appear in the task definition like so:
+
+```json
+"secrets": [
+    {
+        "name": "TEST",
+        "valueFrom": "secrets/test"
+    }
+]
+```
+
+For more information, see [Tagging SSM documents], and the [Amazon ECS Developer
+Guide] on _Specifying Sensitive Data Using Systems Manager Parameter Store_.
+
+[Tagging SSM Documents]: https://docs.aws.amazon.com/systems-manager/latest/userguide/tagging-documents.html
+[Amazon ECS Developer Guide]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
 
 ## Development
 

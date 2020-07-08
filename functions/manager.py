@@ -1,7 +1,9 @@
 """Lambda function for managing ECS tasks and services."""
+import copy
 import json
 import logging
 import os
+import re
 import sys
 import time
 import traceback
@@ -139,7 +141,17 @@ class Boto3Result:
                 "message": str(self.exc),
                 "traceback": [line.split("\n") for line in tb.format()],
             }
-        elif self.status != str(HTTPStatus.OK.value):
+        elif (self.response or {}).get("failures"):
+            return {
+                "title": "Response included failures",
+                "message": (self.response or {}).get("failures"),
+                "traceback": None,
+            }
+        elif (
+            self.status
+            and str(self.status) != "None"
+            and str(self.status) != str(HTTPStatus.OK.value)
+        ):
             return {
                 "title": f"HTTP status not OK: {self.status}",
                 "message": {"response": self.response},
@@ -555,6 +567,56 @@ def _task_wait(
     return r
 
 
+def _map_ecs_ssm_parameters(
+    ssm_client: boto3.client, stored_parameters: List[Dict[str, Any]]
+) -> Boto3Result:
+    """Map ECS parameters from a list of SSM Parameters.
+
+    Read SSM tags for the given parameters and map those that have tag keyed
+    `ENV_VAR_NAME`. Discard any Parameters that do not have such a tag.
+
+    Arguments:
+        ssm_client: A boto3.client("ssm") object.
+
+        stored_parameters: A list of SSM Parameters.
+
+    Returns:
+        Boto3Result with a list of Paramater -> ENV_VAR_NAME pairings in
+        dict format, suitable for conclusion in an ECS containerDefinition.
+    """
+    for parameter in stored_parameters:
+        r = invoke(
+            ssm_client.list_tags_for_resource,
+            **{
+                "ResourceType": "Parameter",
+                "ResourceId": parameter.get("Name"),
+            },
+        )
+        if r.error:
+            return r
+        else:
+            parameter["Tags"] = r.body.get("TagList", [])
+            tag_list = list(
+                filter(
+                    lambda tag: tag.get("Key") == "ENV_VAR_NAME",
+                    parameter["Tags"],
+                )
+            )
+            if len(tag_list) > 0:
+                parameter["ENV_VAR_NAME"] = tag_list[0].get("Value")
+
+    env_var_map: List[Optional[Dict[str, str]]] = [
+        {
+            "name": parameter.get("ENV_VAR_NAME", ""),
+            "valueFrom": parameter.get("Name", ""),
+        }
+        for parameter in stored_parameters
+        if parameter.get("ENV_VAR_NAME")
+    ]
+
+    return Boto3Result(response={"map": env_var_map})
+
+
 def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     """Deploy containers on an ECS service.
 
@@ -573,6 +635,10 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         services in service_ids will be restarted without changes to their
         container definitions.
 
+        secrets: A list of regular expressions to match against SSM Parameter
+        names. Matching Parameters will be included in the task definition if,
+        and only if, they also have an object tag with the key ENV_VAR_NAME.
+
     Returns:
         Boto3Result with a list of ARNs of services that were updated & the
         ARN of the task definition they were updated with, or an error.
@@ -584,6 +650,9 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     cluster_id: str = cast(str, body.get("cluster_id"))
     service_ids: List[str] = cast(List[str], body.get("service_ids"))
     image: Optional[str] = cast(str, body.get("image"))
+    secrets: Optional[List[str]] = cast(
+        Optional[List[str]], body.get("secrets")
+    )
 
     if cluster_id is None or service_ids is None:
         err_msg = _missing_required_keys(
@@ -591,6 +660,41 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         )
         log(*err_msg)
         return Boto3Result(exc=KeyError(err_msg))
+
+    if secrets and not isinstance(secrets, list):
+        return Boto3Result(exc=TypeError("secrets value must be of type list"))
+    elif secrets and isinstance(secrets, list):
+        try:
+            engines = [re.compile(pattern) for pattern in secrets]
+        except re.error as e:
+            return Boto3Result(exc=e)
+
+        ssm_client = boto3.client("ssm")
+        next_token: str = " "
+        ssm_parameters: List[Dict[str, Any]] = []
+        while next_token:
+            r = invoke(
+                ssm_client.describe_parameters,
+                **{"MaxResults": 50, "NextToken": next_token},
+            )
+            if r.error:
+                return r
+            else:
+                ssm_parameters += [
+                    parameter
+                    for parameter in r.body.get("Parameters", [])
+                    if any(
+                        engine.fullmatch(parameter.get("Name"))
+                        for engine in engines
+                    )
+                ]
+                next_token = r.body.get("NextToken", "")
+
+        r = _map_ecs_ssm_parameters(ssm_client, ssm_parameters)
+        if r.error:
+            return r
+        else:
+            secrets_map: List[Dict[str, str]] = r.body["map"]
 
     r = invoke(
         ecs_client.describe_services,
@@ -616,21 +720,17 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         )
         if r.error:
             return r
-        taskdef = r.body["taskDefinition"]
+        taskdef = copy.deepcopy(r.body["taskDefinition"])
 
-        if not image:
-            # redeploy the service with the same task definition
-            new_taskdef_arn: str = taskdef["taskDefinitionArn"]
-            log(
-                "Re-deploying service with existing task definition",
-                new_taskdef_arn,
-            )
-        else:
-            # register a modified task definition with the new container
-            # definitions
-            for containerdef in taskdef["containerDefinitions"]:
+        # compute a modified task definition with the new container
+        # definitions and secrets, if any
+        for containerdef in taskdef["containerDefinitions"]:
+            if secrets:
+                containerdef.update(secrets=secrets_map)
+            if image:
                 containerdef.update(image=image)
 
+        if taskdef != r.body["taskDefinition"]:
             log(
                 msg="Re-deploying service with updated container definitions",
                 data={
@@ -643,9 +743,15 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             r = register_task_definition(ecs_client, taskdef)
             if r.error:
                 return r
+            else:
+                log(
+                    "Registered task definition",
+                    r.body["taskDefinition"]["taskDefinitionArn"],
+                )
 
-            new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
-            log("Registered task definition", new_taskdef_arn)
+        # if we registered a new task definition, 'r' is the response from the
+        # register_task_definition call. otherwise, 'r' is the describe call
+        new_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
 
         r = update_service(
             ecs_client=ecs_client,

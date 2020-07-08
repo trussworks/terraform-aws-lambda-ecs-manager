@@ -1,5 +1,5 @@
 /**
- * Creates a lambda to run an ECS task.
+ * Creates a Lambda to manage ECS services in fargate.
  *
  * Creates the following resources:
  *
@@ -15,6 +15,7 @@
  *
  *   app_name    = var.app_name
  *   environment = var.environment
+ *   parameters = ["arn:aws:ssm:us-east-2:123456789012:parameter/prod-*"]
  *
  *   task_role_arns           = [module.ecs_service_app.task_role_arn]
  *   task_execution_role_arns = [module.ecs_service_app.task_execution_role_arn]
@@ -96,6 +97,16 @@ data "aws_iam_policy_document" "main" {
     ]
 
     resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ssm:GetParameters",
+      "ssm:DescribeParameters",
+      "ssm:ListTagsForResource",
+    ]
+
+    resources = var.parameters
   }
 }
 
