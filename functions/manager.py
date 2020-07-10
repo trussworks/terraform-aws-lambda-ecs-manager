@@ -18,7 +18,7 @@ LOGGER = logging.getLogger()
 LOGGER_LEVEL = logging.INFO
 LOGGER.setLevel(LOGGER_LEVEL)
 STDOUT_HANDLER = logging.StreamHandler(sys.stdout)
-STDOUT_HANDLER.setLevel(logging.INFO)
+STDOUT_HANDLER.setLevel(LOGGER_LEVEL)
 LOGGER.addHandler(STDOUT_HANDLER)
 
 
