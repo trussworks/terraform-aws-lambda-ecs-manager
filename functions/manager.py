@@ -280,8 +280,9 @@ def _generate_container_definition(
         if container_definition["name"] == container_name:
             break
     else:
-        log(container_definition)
-        raise KeyError(f"Definition for container {container_name} not found.")
+        msg = f"Definition for container {container_name} not found."
+        log(msg=msg, data=container_definition, level="critical")
+        raise KeyError(msg)
 
     container_definition["logConfiguration"]["options"][
         "awslogs-stream-prefix"
@@ -318,8 +319,10 @@ def _healthcheck(body: Dict[str, Union[str, None]]) -> Boto3Result:
         Boto3InputError: If cluster_id is not set or is not a string.
     """
     if not isinstance(body.get("cluster"), str):
-        err_msg = _missing_required_keys(["cluster"], list(body))
-        log(*err_msg)
+        err_msg: Dict[str, str] = _missing_required_keys(
+            ["cluster"], list(body)
+        )
+        log(**err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 
     task_filters = {
@@ -471,7 +474,11 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         if r.error:
             return r
         target_taskdef_arn = r.body["taskDefinition"]["taskDefinitionArn"]
-        log(msg="Created task definition", data=target_taskdef_arn)
+        log(
+            msg="Created task definition",
+            data=target_taskdef_arn,
+            level="info",
+        )
     else:
         target_taskdef_arn = svc_taskdef_arn
 
@@ -489,13 +496,17 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     if r.error:
         return r
     new_task_arn = r.body["tasks"][0]["taskArn"]
-    log(msg="Running task", data=new_task_arn)
+    log(msg="Running task", data=new_task_arn, level="info")
 
     # wait for the task to finish
     r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
     if r.error:
         return r
-    log(msg="Finished waiting for task execution", data=new_task_arn)
+    log(
+        msg="Finished waiting for task execution",
+        data=new_task_arn,
+        level="info",
+    )
 
     # inspect task result
     r = invoke(
@@ -656,10 +667,10 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
     )
 
     if cluster_id is None or service_ids is None:
-        err_msg = _missing_required_keys(
+        err_msg: Dict[str, str] = _missing_required_keys(
             ["cluster_id", "service_ids"], list(body)
         )
-        log(*err_msg)
+        log(**err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 
     if secrets and not isinstance(secrets, list):
@@ -739,6 +750,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                     "service_containerdefs": taskdef["containerDefinitions"],
                     "executionRoleArn": taskdef["executionRoleArn"],
                 },
+                level="info",
             )
 
             r = register_task_definition(ecs_client, taskdef)
@@ -746,8 +758,9 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
                 return r
             else:
                 log(
-                    "Registered task definition",
-                    r.body["taskDefinition"]["taskDefinitionArn"],
+                    msg="Registered task definition",
+                    data=r.body["taskDefinition"]["taskDefinitionArn"],
+                    level="info",
                 )
 
         # if we registered a new task definition, 'r' is the response from the
@@ -765,7 +778,7 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             return r
         else:
             service_arn: str = r.body["service"]["serviceArn"]
-            log("Updated service", service_arn)
+            log(msg="Updated service", data=service_arn, level="info")
             updated_services.append(service_arn)
 
     success = {
@@ -805,13 +818,12 @@ def lambda_handler(
     """
     start_t = time.time()
     log(msg="event received", data=event, level="info")
+    err_msg: Dict[str, str]
     try:
         command = event["command"]
         body = event["body"]
     except KeyError:
-        err_msg: Dict[str, str] = _missing_required_keys(
-            ["command", "body"], list(event)
-        )
+        err_msg = _missing_required_keys(["command", "body"], list(event))
         log(**err_msg)
         return err_msg
 
@@ -819,13 +831,15 @@ def lambda_handler(
         err_msg = {
             "msg": f"Command not recognized: '{command}'.",
             "data": "Must be one of: {}".format(list(__DISPATCH__)),
+            "level": "critical",
         }
         log(**err_msg)
         return err_msg
     else:
         result = __DISPATCH__[command](body)  # type: ignore
-        response: Dict[str, Any]
-        response = {"request_payload": {"command": command, "body": body}}
+        response: Dict[str, Any] = {
+            "request_payload": {"command": command, "body": body}
+        }
         response.update(result.error or result.body)
 
     duration = "{} ms".format(round(1000 * (time.time() - start_t), 2))
