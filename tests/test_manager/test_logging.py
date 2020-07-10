@@ -23,7 +23,7 @@ def test_logger_level():
         ("critical", logging.CRITICAL, 1),
     ],
 )
-def test_log_levels(caplog, levelname, levelno, expected_log_count):
+def test_log_output_per_level(caplog, levelname, levelno, expected_log_count):
     msg = "logging message"
     data = "logging data"
     expected = _logging_message(msg=msg, data=data)
