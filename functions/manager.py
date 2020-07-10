@@ -59,6 +59,7 @@ def _missing_required_keys(
             f"'{missing_keys}' field(s) not optional. "
             f"Found: {found_keys}.  Required: {required_keys}"
         ),
+        "level": "critical",
     }
 
 

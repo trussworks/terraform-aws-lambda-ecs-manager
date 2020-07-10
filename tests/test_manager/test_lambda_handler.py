@@ -13,6 +13,7 @@ class TestLambdaHandler:
                     "msg": "Required field(s) not found",
                     "data": "'['command']' field(s) not optional. "
                     "Found: ['body'].  Required: ['command', 'body']",
+                    "level": "critical",
                 },
             ),
             (
@@ -21,6 +22,7 @@ class TestLambdaHandler:
                     "msg": "Required field(s) not found",
                     "data": "'['body']' field(s) not optional. "
                     "Found: ['command'].  Required: ['command', 'body']",
+                    "level": "critical",
                 },
             ),
             (
@@ -29,6 +31,7 @@ class TestLambdaHandler:
                     "msg": "Required field(s) not found",
                     "data": "'['command', 'body']' field(s) not optional. "
                     "Found: [].  Required: ['command', 'body']",
+                    "level": "critical",
                 },
             ),
             (
@@ -38,6 +41,7 @@ class TestLambdaHandler:
                     "data": "'['command', 'body']' field(s) not optional. "
                     "Found: ['wrongkey1', 'wrongkey2'].  "
                     "Required: ['command', 'body']",
+                    "level": "critical",
                 },
             ),
         ],
