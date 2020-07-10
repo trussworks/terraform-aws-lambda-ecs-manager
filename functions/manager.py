@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 import boto3
 
 LOGGER = logging.getLogger()
-LOGGER_LEVEL = logging.WARN
+LOGGER_LEVEL = logging.INFO
 LOGGER.setLevel(LOGGER_LEVEL)
 STDOUT_HANDLER = logging.StreamHandler(sys.stdout)
 STDOUT_HANDLER.setLevel(logging.INFO)
