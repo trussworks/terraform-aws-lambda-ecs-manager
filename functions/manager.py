@@ -808,8 +808,9 @@ def lambda_handler(
         command = event["command"]
         body = event["body"]
     except KeyError:
-        err_msg: Dict[str, str]
-        err_msg = _missing_required_keys(["command", "body"], list(event))
+        err_msg: Dict[str, str] = _missing_required_keys(
+            ["command", "body"], list(event)
+        )
         log(**err_msg)
         return err_msg
 
