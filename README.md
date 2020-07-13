@@ -16,7 +16,6 @@ module "lambda_ecs_manager" {
 
   app_name    = var.app_name
   environment = var.environment
-  parameters = ["arn:aws:ssm:us-east-2:123456789012:parameter/prod-*"]
 
   task_role_arns           = [module.ecs_service_app.task_role_arn]
   task_execution_role_arns = [module.ecs_service_app.task_execution_role_arn]
@@ -41,7 +40,6 @@ No requirements.
 | app\_name | Name of the application the Lambda is associated with. | `string` | n/a | yes |
 | environment | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
 | logs\_retention | Number of days to retain lambda events. | `string` | `"365"` | no |
-| parameters | SSM Parameters the Lambda should be able to describe. | `list(string)` | `[]` | no |
 | publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
 | task\_execution\_role\_arns | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
 | task\_role\_arns | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |

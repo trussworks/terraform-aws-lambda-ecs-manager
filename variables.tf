@@ -29,9 +29,3 @@ variable "publish" {
   description = "Whether to publish creation/change as new Lambda Function Version."
   default     = false
 }
-
-variable "parameters" {
-  type        = list(string)
-  description = "SSM Parameters the Lambda should be able to describe."
-  default     = []
-}
