@@ -25,7 +25,6 @@ class TestValidations:
         ],
     )
     def test_required_keys_present(mock_invoke, body):
-        return
         result = manager._runtask(body)
 
         assert isinstance(result, Boto3Result)
