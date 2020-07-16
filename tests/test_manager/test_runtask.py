@@ -28,4 +28,6 @@ class TestValidations:
         result = manager._runtask(body)
 
         assert isinstance(result, Boto3Result)
-        assert result.exc == KeyError(manager._missing_required_keys())
+        assert isinstance(result.exc, KeyError)
+        assert result.error is not None
+        assert result.body == {}
