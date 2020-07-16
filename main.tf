@@ -23,9 +23,7 @@
  */
 
 locals {
-  service_name   = "ecs-manager-${var.app_name}-${var.environment}"
-  log_group      = "/aws/lambda/${var.app_name}"
-  taskdef_family = "${var.app_name}-lambda-${var.environment}"
+  log_group = "/aws/lambda/${var.app_name}"
 }
 
 #
@@ -59,7 +57,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 }
 
 resource "aws_iam_role" "main" {
-  description        = "Allows Lambda functions to update ${local.taskdef_family} service container definitions."
+  description        = "Allows Lambda functions to update ECS services."
   name               = "lambda-${var.app_name}-${var.environment}"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
