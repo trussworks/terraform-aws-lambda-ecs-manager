@@ -474,7 +474,6 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
     if taskdef_entrypoint:
-        container_id = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
