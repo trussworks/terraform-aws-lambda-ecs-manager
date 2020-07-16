@@ -423,18 +423,46 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     Keys:
         entrypoint: If set, the entryPoint command field in the ECS task
         definition will be changed to this value before the task is started.
+
+        container_id: The container to run as a new task.
+
+        service_id: The service where the container can be found.
+
+        cluster_id: The cluster where the service can be found.
+
+    Returns:
+        Boto3Result
     """
-    taskdef_entrypoint = body.get("entrypoint")
+    taskdef_entrypoint: Optional[str] = body.get("entrypoint")
 
     _environment = os.environ["ENVIRONMENT"]
-    _cluster = os.environ["ECS_CLUSTER"]
-    _service = os.environ["ECS_SERVICE"]
-    taskdef_family = f"{_service}-lambda-{_environment}"
+
+    missing_required_keys: List[Optional[str]] = []
+    required_keys = {"container_id", "service_id", "cluster_id"}
+    validated = {
+        key: value
+        for key in required_keys
+        for value in (body.get(key) or "",)
+        if value and isinstance(value, str)
+    }
+    missing_required_keys = sorted(required_keys - validated.keys())
+
+    if missing_required_keys:
+        err_msg = _missing_required_keys(list(required_keys), list(body))
+        log(**err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    container_id = validated["container_id"]
+    service_id = validated["service_id"]
+    cluster_id = validated["cluster_id"]
+
+    taskdef_family = f"{service_id}-{_environment}"
 
     ecs = boto3.client("ecs")
 
     r = invoke(
-        ecs.describe_services, **{"cluster": _cluster, "services": [_service]}
+        ecs.describe_services,
+        **{"cluster": cluster_id, "services": [service_id]},
     )
     if r.error:
         return r
@@ -442,7 +470,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
     if taskdef_entrypoint:
-        _container_name = os.environ["ECS_CONTAINER"]
+        container_id = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
@@ -458,7 +486,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
                 "family": taskdef_family,
                 "containerDefinitions": [
                     _generate_container_definition(
-                        service_taskdef, _container_name, taskdef_entrypoint
+                        service_taskdef, container_id, taskdef_entrypoint
                     )
                 ],
                 "executionRoleArn": service_taskdef["executionRoleArn"],
@@ -486,7 +514,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     r = invoke(
         ecs.run_task,
         **{
-            "cluster": _cluster,
+            "cluster": cluster_id,
             "taskDefinition": target_taskdef_arn,
             "launchType": "FARGATE",
             "networkConfiguration": netconf,
@@ -499,7 +527,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     log(msg="Running task", data=new_task_arn, level="info")
 
     # wait for the task to finish
-    r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
+    r = _task_wait(ecs=ecs, cluster=cluster_id, task_arn=new_task_arn)
     if r.error:
         return r
     log(
@@ -510,7 +538,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
 
     # inspect task result
     r = invoke(
-        ecs.describe_tasks, **{"cluster": _cluster, "tasks": [new_task_arn]}
+        ecs.describe_tasks, **{"cluster": cluster_id, "tasks": [new_task_arn]}
     )
     if r.error:
         return r

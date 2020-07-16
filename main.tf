@@ -137,8 +137,6 @@ resource "aws_lambda_function" "main" {
 
   environment {
     variables = {
-      ECS_CLUSTER = var.environment
-      ECS_SERVICE = var.app_name
       ENVIRONMENT = var.environment
     }
   }
