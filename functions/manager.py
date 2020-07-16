@@ -433,7 +433,14 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     Returns:
         Boto3Result
     """
-    taskdef_entrypoint: Optional[str] = body.get("entrypoint")
+    taskdef_entrypoint: str = body.get("entrypoint") or ""
+    if not isinstance(taskdef_entrypoint, str):
+        err_msg = {
+            "msg": "TypeError",
+            "data": "'entrypoint' key must be of type string",
+        }
+        log(**err_msg)
+        return Boto3Result(exc=TypeError(err_msg))
 
     missing_required_keys: List[Optional[str]] = []
     required_keys = {"container_id", "service_id", "cluster_id"}
