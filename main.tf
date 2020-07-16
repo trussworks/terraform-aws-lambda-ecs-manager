@@ -135,12 +135,6 @@ resource "aws_lambda_function" "main" {
   timeout          = 120
   publish          = var.publish
 
-  environment {
-    variables = {
-      ENVIRONMENT = var.environment
-    }
-  }
-
   tags = {
     Environment = var.environment
     Automation  = "Terraform"

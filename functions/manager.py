@@ -435,8 +435,6 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     """
     taskdef_entrypoint: Optional[str] = body.get("entrypoint")
 
-    _environment = os.environ["ENVIRONMENT"]
-
     missing_required_keys: List[Optional[str]] = []
     required_keys = {"container_id", "service_id", "cluster_id"}
     validated = {
@@ -455,8 +453,6 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     container_id = validated["container_id"]
     service_id = validated["service_id"]
     cluster_id = validated["cluster_id"]
-
-    taskdef_family = f"{service_id}-{_environment}"
 
     ecs = boto3.client("ecs")
 
@@ -477,6 +473,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         if r.error:
             return r
         service_taskdef = r.body["taskDefinition"]
+        taskdef_family = service_taskdef["family"]
 
         # create and register a custom task definition by modifying the
         # existing service
