@@ -11,12 +11,15 @@ required_keys_combinations = itertools.combinations(required_keys, 2)
 
 
 class TestValidations:
-    def test_entrypoint_type(mock_invoke):
+    def test_entrypoint_type(mock_invoke, caplog):
         result = manager._runtask({"entrypoint": [1, 2, 3]})
 
         assert isinstance(result.exc, TypeError)
         assert result.error is not None
         assert result.body == {}
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelno == logging.CRITICAL
 
     @_pytest.mark.parametrize(
         ("body"),

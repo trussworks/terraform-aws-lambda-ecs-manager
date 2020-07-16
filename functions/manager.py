@@ -438,6 +438,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         err_msg = {
             "msg": "TypeError",
             "data": "'entrypoint' key must be of type string",
+            "level": "critical",
         }
         log(**err_msg)
         return Boto3Result(exc=TypeError(err_msg))
