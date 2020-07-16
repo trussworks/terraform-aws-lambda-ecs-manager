@@ -444,7 +444,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         return Boto3Result(exc=TypeError(err_msg))
 
     missing_required_keys: List[Optional[str]] = []
-    required_keys = {"container_id", "service_id", "cluster_id"}
+    required_keys = {"service_id", "cluster_id"}
     validated = {
         key: value
         for key in required_keys
@@ -455,6 +455,16 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
 
     if missing_required_keys:
         err_msg = _missing_required_keys(list(required_keys), list(body))
+        log(**err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    if "entrypoint" in body and "container_id" not in body:
+        err_msg = {
+            "msg": "container_id required to process entrypoint",
+            "data": "when giving an entrypoint, container_id is required. "
+            "found keys: {}".format(list(body)),
+            "level": "critical",
+        }
         log(**err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 

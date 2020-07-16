@@ -1,13 +1,9 @@
-import itertools
 import logging
 
 import pytest as _pytest
 
 import functions.manager as manager
 from functions.manager import Boto3Result as Boto3Result
-
-required_keys = ["container_id", "service_id", "cluster_id"]
-required_keys_combinations = itertools.combinations(required_keys, 2)
 
 
 class TestValidations:
@@ -23,10 +19,7 @@ class TestValidations:
 
     @_pytest.mark.parametrize(
         ("body"),
-        [
-            {combo[0]: "foo", combo[1]: "bar"}
-            for combo in required_keys_combinations
-        ],
+        [{"service_id": "some_service"}, {"cluster_id": "some_cluster"}],
     )
     def test_required_keys_present(mock_invoke, body, caplog):
         result = manager._runtask(body)
@@ -38,3 +31,16 @@ class TestValidations:
 
         assert len(caplog.records) == 1
         assert caplog.records[0].levelno == logging.CRITICAL
+
+    def test_entrypoint_requires_container_id(mock_invoke):
+        result = manager._runtask(
+            {
+                "entrypoint": "someentrypoint",
+                "cluster_id": "somecluster",
+                "service_id": "someservice",
+            }
+        )
+        assert isinstance(result, Boto3Result)
+        assert isinstance(result.exc, KeyError)
+        assert result.error is not None
+        assert result.body == {}
