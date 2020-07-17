@@ -423,18 +423,62 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     Keys:
         entrypoint: If set, the entryPoint command field in the ECS task
         definition will be changed to this value before the task is started.
-    """
-    taskdef_entrypoint = body.get("entrypoint")
+        Optional.
 
-    _environment = os.environ["ENVIRONMENT"]
-    _cluster = os.environ["ECS_CLUSTER"]
-    _service = os.environ["ECS_SERVICE"]
-    taskdef_family = f"{_service}-lambda-{_environment}"
+        container_id: The container to run as a new task. If an 'entrypoint' is
+        provided, then this is required.
+
+        service_id: The service where the container can be found. Required.
+
+        cluster_id: The cluster where the service can be found. Required.
+
+    Returns:
+        Boto3Result
+    """
+    taskdef_entrypoint: str = body.get("entrypoint") or ""
+    if not isinstance(taskdef_entrypoint, str):
+        err_msg = {
+            "msg": "TypeError",
+            "data": "'entrypoint' key must be of type string",
+            "level": "critical",
+        }
+        log(**err_msg)
+        return Boto3Result(exc=TypeError(err_msg))
+
+    missing_required_keys: List[Optional[str]] = []
+    required_keys = {"service_id", "cluster_id"}
+    validated = {
+        key: value
+        for key in required_keys
+        for value in (body.get(key) or "",)
+        if value and isinstance(value, str)
+    }
+    missing_required_keys = sorted(required_keys - validated.keys())
+
+    if missing_required_keys:
+        err_msg = _missing_required_keys(list(required_keys), list(body))
+        log(**err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    if "entrypoint" in body and "container_id" not in body:
+        err_msg = {
+            "msg": "container_id required to process entrypoint",
+            "data": "when giving an entrypoint, container_id is required. "
+            "found keys: {}".format(list(body)),
+            "level": "critical",
+        }
+        log(**err_msg)
+        return Boto3Result(exc=KeyError(err_msg))
+
+    container_id = validated["container_id"]
+    service_id = validated["service_id"]
+    cluster_id = validated["cluster_id"]
 
     ecs = boto3.client("ecs")
 
     r = invoke(
-        ecs.describe_services, **{"cluster": _cluster, "services": [_service]}
+        ecs.describe_services,
+        **{"cluster": cluster_id, "services": [service_id]},
     )
     if r.error:
         return r
@@ -442,13 +486,13 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
     if taskdef_entrypoint:
-        _container_name = os.environ["ECS_CONTAINER"]
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
         if r.error:
             return r
         service_taskdef = r.body["taskDefinition"]
+        taskdef_family = service_taskdef["family"]
 
         # create and register a custom task definition by modifying the
         # existing service
@@ -458,7 +502,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
                 "family": taskdef_family,
                 "containerDefinitions": [
                     _generate_container_definition(
-                        service_taskdef, _container_name, taskdef_entrypoint
+                        service_taskdef, container_id, taskdef_entrypoint
                     )
                 ],
                 "executionRoleArn": service_taskdef["executionRoleArn"],
@@ -486,7 +530,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     r = invoke(
         ecs.run_task,
         **{
-            "cluster": _cluster,
+            "cluster": cluster_id,
             "taskDefinition": target_taskdef_arn,
             "launchType": "FARGATE",
             "networkConfiguration": netconf,
@@ -499,7 +543,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     log(msg="Running task", data=new_task_arn, level="info")
 
     # wait for the task to finish
-    r = _task_wait(ecs=ecs, cluster=_cluster, task_arn=new_task_arn)
+    r = _task_wait(ecs=ecs, cluster=cluster_id, task_arn=new_task_arn)
     if r.error:
         return r
     log(
@@ -510,7 +554,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
 
     # inspect task result
     r = invoke(
-        ecs.describe_tasks, **{"cluster": _cluster, "tasks": [new_task_arn]}
+        ecs.describe_tasks, **{"cluster": cluster_id, "tasks": [new_task_arn]}
     )
     if r.error:
         return r
