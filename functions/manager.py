@@ -423,12 +423,14 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     Keys:
         entrypoint: If set, the entryPoint command field in the ECS task
         definition will be changed to this value before the task is started.
+        Optional.
 
-        container_id: The container to run as a new task.
+        container_id: The container to run as a new task. If an 'entrypoint' is
+        provided, then this is required.
 
-        service_id: The service where the container can be found.
+        service_id: The service where the container can be found. Required.
 
-        cluster_id: The cluster where the service can be found.
+        cluster_id: The cluster where the service can be found. Required.
 
     Returns:
         Boto3Result
