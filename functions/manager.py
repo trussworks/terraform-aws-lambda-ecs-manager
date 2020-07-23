@@ -470,7 +470,6 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         log(**err_msg)
         return Boto3Result(exc=KeyError(err_msg))
 
-    container_id = validated["container_id"]
     service_id = validated["service_id"]
     cluster_id = validated["cluster_id"]
 
@@ -486,6 +485,8 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
     svc_taskdef_arn = r.body["services"][0]["taskDefinition"]
 
     if taskdef_entrypoint:
+        container_id: str = body.get("container_id") or ""
+
         r = invoke(
             ecs.describe_task_definition, **{"taskDefinition": svc_taskdef_arn}
         )
