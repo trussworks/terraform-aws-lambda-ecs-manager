@@ -70,3 +70,156 @@ Terraform 0.12. Pin module version to `~> 1.X`. Submit pull-requests to `terrafo
 | version | Published version of the lambda function. |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+## Invoking the lambda
+
+You can invoke the deployed ecs-manager lambda using aws-cli and the
+`environment` input you used when importing the module:
+
+```console
+aws lambda invoke --function-name "<environment>-ecs-manager" --payload payload.json output.json
+```
+
+### Get a status report on tasks
+
+ecs-manager can produce a report on the status of running and stopped tasks
+from a given service and/or task definition family:
+
+```json
+{
+    "command": "healthcheck",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_name": "app-service1"
+}
+```
+
+To find if any containers are unhealthy, exited non-zero, or reported any
+failures, this `jq` query can help:
+
+```console
+jq '.data.response.message.tasks |
+    any(
+        (.failures | length > 0)
+        or (
+            .containers | any(.exitCode > 0 or .healthStatus == "UNHEALTHY")
+        )
+    )' < output.json
+```
+
+It will print a boolean indicating if errors were found: `false` means the
+queried services' statuses are OK, while `true` means at least one problem was
+found.
+
+### Deploy an image
+
+To deploy a new image into each of the containers in a list of services:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": ["app-service1", "app-service2"],
+        "image": "repo.url/app-service:test"
+    }
+}
+```
+
+This will find the services "app-service1" and "app-service2" in "app-cluster",
+registering new task definitions for each service with _all_ the images in each
+container definition set to `repo.url/app-service:test`. It then restarts the
+services.
+
+If the "image" key is omitted, services will be restarted in-place without any changes
+to the task definition:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": ["app-service1", "app-service2"]
+    }
+}
+```
+
+#### SSM Parameters
+
+ecs-manager can add (or remove) secrets in an ECS task definition. Using the
+`secrets` key, pass in a list of regular expressions:
+
+```json
+{
+    "command": "deploy",
+    "body": {
+        "cluster_id": "app-cluster",
+        "service_ids": [
+            "app-service1"
+        ],
+        "secrets": [
+            "^/app-service1/secrets/\\S+$"
+        ]
+    }
+}
+```
+
+For each of the SSM Parameters with names that match any regular expression in the list,
+the `ENV_VAR_NAME` object tag will be read. If it is found, the Parameter's value
+will be added to the container definitions. For example, a Parameter with this tag:
+
+```console
+$ aws ssm list-tags-for-resource --resource-type "Parameter" --resource-id 'secrets/test'
+{
+    "TagList": [
+        {
+            "Key": "ENV_VAR_NAME",
+            "Value": "TEST"
+        }
+    ]
+}
+```
+
+Will appear in the task definition like so:
+
+```json
+"secrets": [
+    {
+        "name": "TEST",
+        "valueFrom": "secrets/test"
+    }
+]
+```
+
+For more information, see [Tagging SSM documents], and the [Amazon ECS Developer
+Guide] on _Specifying Sensitive Data Using Systems Manager Parameter Store_.
+
+[Tagging SSM Documents]: https://docs.aws.amazon.com/systems-manager/latest/userguide/tagging-documents.html
+[Amazon ECS Developer Guide]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
+
+## Development
+
+Set up the environment:
+
+```console
+brew install poetry pre-commit
+pre-commit install --install-hooks
+poetry install && poetry shell
+```
+
+To test the function locally:
+
+```console
+$ jq < payload.json  # run a task without changing the entryPoint in the task definition
+{
+  "command": "runtask",
+  "body": { "entrypoint": null }
+}
+$ ./run_local ./payload.json
+```
+
+To test the deployed Lambda:
+
+```console
+./invoke ./payload.json "function-name"
+```
