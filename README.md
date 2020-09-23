@@ -1,5 +1,12 @@
 # terraform-aws-lambda-ecs-manager
 
+## Terraform Versions
+
+Terraform 0.13. Pin module version to `~> 2.X`. Submit pull-requests to `master` branch.
+
+Terraform 0.12. Pin module version to `~> 1.X`. Submit pull-requests to `terraform012` branch.
+
+<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 Creates a Lambda to manage ECS services in Fargate.
 
 Creates the following resources:
@@ -24,14 +31,17 @@ module "lambda_ecs_manager" {
 
 ## Requirements
 
-No requirements.
+| Name | Version |
+|------|---------|
+| terraform | ~> 0.13.0 |
+| aws | ~> 3.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | archive | n/a |
-| aws | n/a |
+| aws | ~> 3.0 |
 
 ## Inputs
 
@@ -57,6 +67,8 @@ No requirements.
 | source\_code\_hash | Base64-encoded representation of raw SHA-256 sum of the zip file. |
 | source\_code\_size | The size in bytes of the function .zip file. |
 | version | Published version of the lambda function. |
+
+<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Invoking the lambda
 
