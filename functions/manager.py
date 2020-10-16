@@ -730,9 +730,14 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
         next_token: str = " "
         ssm_parameters: List[Dict[str, Any]] = []
         while next_token:
+            describe_parameters_request = {
+                "MaxResults": 50,
+                "NextToken": next_token,
+            }
+            if next_token == " ":
+                describe_parameters_request = {"MaxResults": 50}
             r = invoke(
-                ssm_client.describe_parameters,
-                **{"MaxResults": 50, "NextToken": next_token},
+                ssm_client.describe_parameters, **describe_parameters_request,
             )
             if r.error:
                 return r
