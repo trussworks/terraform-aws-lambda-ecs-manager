@@ -727,25 +727,19 @@ def _deploy(body: Dict[str, Union[str, List[str]]]) -> Boto3Result:
             return Boto3Result(exc=e)
 
         ssm_client = boto3.client("ssm")
-        next_token: str = " "
+        paginator = ssm_client.get_paginator("describe_parameters")
+        page_iterator = paginator.paginate()
+
         ssm_parameters: List[Dict[str, Any]] = []
-        while next_token:
-            r = invoke(
-                ssm_client.describe_parameters,
-                **{"MaxResults": 50, "NextToken": next_token},
-            )
-            if r.error:
-                return r
-            else:
-                ssm_parameters += [
-                    parameter
-                    for parameter in r.body.get("Parameters", [])
-                    if any(
-                        engine.fullmatch(parameter.get("Name"))
-                        for engine in engines
-                    )
-                ]
-                next_token = r.body.get("NextToken", "")
+        for page in page_iterator:
+            ssm_parameters += [
+                parameter
+                for parameter in page.get("Parameters")
+                if any(
+                    engine.fullmatch(parameter.get("Name"))
+                    for engine in engines
+                )
+            ]
 
         r = _map_ecs_ssm_parameters(ssm_client, ssm_parameters)
         if r.error:
