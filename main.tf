@@ -70,7 +70,7 @@ data "aws_iam_policy_document" "main" {
       "logs:PutLogEvents",
     ]
 
-    resources = [aws_cloudwatch_log_group.main.arn]
+    resources = ["${aws_cloudwatch_log_group.main.arn}:*"]
   }
 
   # allow the lambda to assume the task roles
