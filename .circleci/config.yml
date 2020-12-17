@@ -1,35 +1,29 @@
+---
+version: 2.1
 jobs:
   lint_and_test_python:
     docker:
-    - auth:
-        password: $DOCKER_PASSWORD
-        username: $DOCKER_USERNAME
-      image: trussworks/circleci:29ab89fdada1f85c5d8fb685a2c71660f0c5f60c
+      - image: trussworks/circleci-docker-primary:540071e99807185ec96d01240a3926da5da18457
     steps:
-    - checkout
-    - run:
-        command: 'pip3 install --progress-bar off ''poetry==1.0.9'' ''pre-commit==2.2.0''
-
-          '
-        name: Install build & test dependencies
-    - run:
-        command: poetry build && poetry install
-        name: Build & install
-    - run:
-        command: pre-commit run --all-files --show-diff-on-failure
-        name: Run pre-commit hooks on all files
-    - run:
-        command: 'poetry run pytest --full-trace
-
-          '
-        name: Run tests
-    - store_artifacts:
-        path: dist
-version: 2.1
+      - checkout
+      - run:
+          name: Install build & test dependencies
+          command: |
+            pip3 install --progress-bar off 'poetry==1.0.9' 'pre-commit==2.2.0'
+      - run:
+          name: Build & install
+          command: poetry build && poetry install
+      - run:
+          name: Run pre-commit hooks on all files
+          command: pre-commit run --all-files --show-diff-on-failure
+      - run:
+          name: Run tests
+          command: |
+            poetry run pytest --full-trace
+      - store_artifacts:
+          path: dist
 workflows:
+  version: 2.1
   pipeline:
     jobs:
-    - lint_and_test_python:
-        context:
-        - org-global
-  version: 2.1
+      - lint_and_test_python
