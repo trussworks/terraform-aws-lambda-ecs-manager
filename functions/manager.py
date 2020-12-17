@@ -590,8 +590,8 @@ def _task_wait(
     ecs: boto3.client,
     cluster: str,
     task_arn: str,
-    delay: int = 6,
-    attempts: int = 20,
+    delay: int = 15,
+    attempts: int = 40,
 ) -> Boto3Result:
     """Wait for a task to finish.
 
