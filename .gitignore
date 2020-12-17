@@ -1,1 +1,3 @@
 .envrc.local
+.mypy_cache/*
+functions.egginfo/*
