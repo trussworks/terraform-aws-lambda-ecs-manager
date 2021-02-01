@@ -35,3 +35,9 @@ variable "package_type" {
   description = "(Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. Defaults to `Zip`."
   default     = "Zip"
 }
+
+variable "image_uri" {
+  type        = string
+  description = "(Optional) The ECR image URI containing the function's deployment package."
+  default     = ""
+}
