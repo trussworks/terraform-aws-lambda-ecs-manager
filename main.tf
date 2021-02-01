@@ -133,7 +133,7 @@ resource "aws_lambda_function" "main" {
   timeout          = 120
   publish          = var.publish
   package_type     = var.package_type
-  image_url        = var.image_uri
+  image_uri        = var.image_uri
 
   tags = {
     Environment = var.environment
