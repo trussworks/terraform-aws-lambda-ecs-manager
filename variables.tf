@@ -29,3 +29,9 @@ variable "publish" {
   description = "Whether to publish creation/change as new Lambda Function Version."
   default     = false
 }
+
+variable "package_type" {
+  type        = string
+  description = "(Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. Defaults to `Zip`."
+  default     = "Zip"
+}

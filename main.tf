@@ -132,6 +132,7 @@ resource "aws_lambda_function" "main" {
   runtime          = "python3.7"
   timeout          = 120
   publish          = var.publish
+  package_type     = var.package_type
 
   tags = {
     Environment = var.environment
