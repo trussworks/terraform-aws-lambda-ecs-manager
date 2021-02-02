@@ -49,7 +49,7 @@ module "lambda_ecs_manager" {
 |------|-------------|------|---------|:--------:|
 | app\_name | Name of the application the Lambda is associated with. | `string` | n/a | yes |
 | environment | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
-| image\_uri | (Optional) The ECR image URI containing the function's deployment package. | `string` | `""` | no |
+| image\_uri | (Optional) The ECR image URI containing the function's deployment package. | `string` | `null` | no |
 | logs\_retention | Number of days to retain lambda events. | `string` | `"365"` | no |
 | package\_type | (Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. Defaults to `Zip`. | `string` | `"Zip"` | no |
 | publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |

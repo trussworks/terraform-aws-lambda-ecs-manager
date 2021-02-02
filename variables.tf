@@ -39,5 +39,5 @@ variable "package_type" {
 variable "image_uri" {
   type        = string
   description = "(Optional) The ECR image URI containing the function's deployment package."
-  default     = ""
+  default     = null
 }
