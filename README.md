@@ -49,7 +49,9 @@ module "lambda_ecs_manager" {
 |------|-------------|------|---------|:--------:|
 | app\_name | Name of the application the Lambda is associated with. | `string` | n/a | yes |
 | environment | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
+| image\_uri | (Optional) The ECR image URI containing the function's deployment package. | `string` | `null` | no |
 | logs\_retention | Number of days to retain lambda events. | `string` | `"365"` | no |
+| package\_type | (Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. | `string` | `"Zip"` | no |
 | publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
 | task\_execution\_role\_arns | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
 | task\_role\_arns | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |

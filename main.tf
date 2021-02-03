@@ -122,16 +122,19 @@ data "archive_file" "main" {
 }
 
 resource "aws_lambda_function" "main" {
-  filename      = data.archive_file.main.output_path
   function_name = var.app_name
   description   = "Updates an ECS service"
+  runtime       = "python3.7"
+  role          = aws_iam_role.main.arn
+  handler       = "manager.lambda_handler"
+  timeout       = 120
+  publish       = var.publish
+  package_type  = var.package_type
 
-  role             = aws_iam_role.main.arn
-  handler          = "manager.lambda_handler"
-  source_code_hash = data.archive_file.main.output_base64sha256
-  runtime          = "python3.7"
-  timeout          = 120
-  publish          = var.publish
+  filename         = var.package_type == "Zip" ? data.archive_file.main.output_path : null
+  source_code_hash = var.package_type == "Zip" ? data.archive_file.main.output_base64sha256 : null
+
+  image_uri = var.image_uri
 
   tags = {
     Environment = var.environment
