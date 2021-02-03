@@ -32,7 +32,7 @@ variable "publish" {
 
 variable "package_type" {
   type        = string
-  description = "(Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. Defaults to `Zip`."
+  description = "(Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`."
   default     = "Zip"
 }
 
