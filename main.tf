@@ -131,8 +131,8 @@ resource "aws_lambda_function" "main" {
   publish       = var.publish
   package_type  = var.package_type
 
-  filename         = data.archive_file.main.output_path
-  source_code_hash = data.archive_file.main.output_base64sha256
+  filename         = var.package_type == "Zip" ? data.archive_file.main.output_path : null
+  source_code_hash = var.package_type == "Zip" ? data.archive_file.main.output_base64sha256 : null
 
   image_uri = var.image_uri
 
