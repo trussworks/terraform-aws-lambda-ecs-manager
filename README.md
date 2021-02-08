@@ -55,6 +55,7 @@ module "lambda_ecs_manager" {
 | publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
 | task\_execution\_role\_arns | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
 | task\_role\_arns | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |
+| timeout | How long a lambda call can execute before it is timed out, in seconds. | `number` | `120` | no |
 
 ## Outputs
 
