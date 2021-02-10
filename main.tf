@@ -127,7 +127,7 @@ resource "aws_lambda_function" "main" {
   runtime       = "python3.7"
   role          = aws_iam_role.main.arn
   handler       = "manager.lambda_handler"
-  timeout       = 120
+  timeout       = var.timeout
   publish       = var.publish
   package_type  = var.package_type
 

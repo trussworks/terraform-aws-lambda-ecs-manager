@@ -41,3 +41,9 @@ variable "image_uri" {
   description = "(Optional) The ECR image URI containing the function's deployment package."
   default     = null
 }
+
+variable "timeout" {
+  type        = number
+  description = "How long a lambda call can execute before it is timed out, in seconds."
+  default     = 120
+}
