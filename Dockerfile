@@ -11,4 +11,4 @@ COPY . .
 
 RUN poetry build && pip3 install --no-cache-dir --disable-pip-version-check dist/functions-"$MANAGER_VERSION"-py3-none-any.whl
 
-CMD ["functions.manager"]
+CMD ["functions.manager.lambda_handler"]
