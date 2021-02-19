@@ -1,9 +1,9 @@
-FROM python:3-buster
+FROM amazon/aws-lambda-python:3
 
 ARG MANAGER_VERSION="2.1.1"
 
 # Install build dependencies
-RUN pip3 install --disable-pip-version-check --progress-bar off 'poetry==1.1.4'
+RUN pip3 install --no-cache-dir --disable-pip-version-check --progress-bar off 'poetry==1.1.4'
 
 # Install ecs manager
 WORKDIR /home/
@@ -11,6 +11,6 @@ RUN curl --silent --show-error --location https://github.com/trussworks/terrafor
  && unzip manager.zip
 
 WORKDIR /home/terraform-aws-lambda-ecs-manager-"$MANAGER_VERSION"
-RUN poetry build && pip3 install --disable-pip-version-check dist/functions-"$MANAGER_VERSION"-py3-none-any.whl
+RUN poetry build && pip3 install --no-cache-dir --disable-pip-version-check dist/functions-"$MANAGER_VERSION"-py3-none-any.whl
 
 ENTRYPOINT ["python3", "-m", "functions.manager"]
