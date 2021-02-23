@@ -124,9 +124,9 @@ data "archive_file" "main" {
 resource "aws_lambda_function" "main" {
   function_name = var.app_name
   description   = "Updates an ECS service"
-  runtime       = "python3.7"
+  runtime       = var.package_type != "Zip" ? null : "python3.7"
   role          = aws_iam_role.main.arn
-  handler       = "manager.lambda_handler"
+  handler       = var.package_type != "Zip" ? null : "manager.lambda_handler"
   timeout       = var.timeout
   publish       = var.publish
   package_type  = var.package_type

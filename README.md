@@ -43,6 +43,21 @@ module "lambda_ecs_manager" {
 | archive | n/a |
 | aws | ~> 3.0 |
 
+## Modules
+
+No Modules.
+
+## Resources
+
+| Name |
+|------|
+| [archive_file](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) |
+| [aws_cloudwatch_log_group](https://registry.terraform.io/providers/hashicorp/aws/3.0/docs/resources/cloudwatch_log_group) |
+| [aws_iam_policy_document](https://registry.terraform.io/providers/hashicorp/aws/3.0/docs/data-sources/iam_policy_document) |
+| [aws_iam_role_policy](https://registry.terraform.io/providers/hashicorp/aws/3.0/docs/resources/iam_role_policy) |
+| [aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws/3.0/docs/resources/iam_role) |
+| [aws_lambda_function](https://registry.terraform.io/providers/hashicorp/aws/3.0/docs/resources/lambda_function) |
+
 ## Inputs
 
 | Name | Description | Type | Default | Required |
@@ -70,7 +85,6 @@ module "lambda_ecs_manager" {
 | source\_code\_hash | Base64-encoded representation of raw SHA-256 sum of the zip file. |
 | source\_code\_size | The size in bytes of the function .zip file. |
 | version | Published version of the lambda function. |
-
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Invoking the lambda
