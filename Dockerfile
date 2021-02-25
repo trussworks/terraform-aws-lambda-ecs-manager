@@ -9,6 +9,7 @@ RUN pip3 install --no-cache-dir --disable-pip-version-check --progress-bar off '
 WORKDIR /home/
 COPY . .
 
+WORKDIR /home/terraform-aws-lambda-ecs-manager-"$MANAGER_VERSION"
 RUN poetry build && pip3 install --no-cache-dir --disable-pip-version-check dist/functions-"$MANAGER_VERSION"-py3-none-any.whl
 
 CMD ["functions.manager.lambda_handler"]
