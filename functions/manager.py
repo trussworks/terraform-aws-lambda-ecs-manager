@@ -445,7 +445,7 @@ def _runtask(body: Dict[str, Union[str, None]]) -> Boto3Result:
         log(**err_msg)
         return Boto3Result(exc=TypeError(err_msg))
 
-    missing_required_keys: List[Optional[str]] = []
+    missing_required_keys: List[str] = []
     required_keys = {"service_id", "cluster_id"}
     validated = {
         key: value
