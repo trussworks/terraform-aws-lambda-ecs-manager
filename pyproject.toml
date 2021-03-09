@@ -18,7 +18,7 @@ flake8-breakpoint = "^1.1.0"
 flake8-bugbear = "^20.1.4"
 flake8-docstrings = "^1.5.0"
 isort = {version = "^4.3.21", extras = ["pyproject"]}
-mypy = "^0.770"
+mypy = "^0.812"
 mypy-boto3-lambda = "^1.12.28"
 pytest = "^5.2"
 pytest-cov = "^2.8.1"
