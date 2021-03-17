@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "functions"
-version = "2.1.2"
+version = "2.3.0"
 description = ""
 authors = ["Ryan Delaney <ryan@truss.works>"]
 readme = "README.md"
