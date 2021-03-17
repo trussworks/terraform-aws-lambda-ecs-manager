@@ -1,6 +1,6 @@
 FROM amazon/aws-lambda-python:3
 
-ARG MANAGER_VERSION="2.1.2"
+ARG MANAGER_VERSION="2.3.0"
 
 # Install build dependencies
 RUN pip3 install --no-cache-dir --disable-pip-version-check --progress-bar off 'poetry==1.1.4'
