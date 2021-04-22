@@ -1,6 +1,7 @@
 ---
 default: true
 line_length: false
+no-inline-html: false
 no-duplicate-header:
   siblings_only: true
 commands-show-output: false
