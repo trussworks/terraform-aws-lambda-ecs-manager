@@ -33,59 +33,59 @@ module "lambda_ecs_manager" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 0.13.0 |
-| aws | >= 3.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.13.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| archive | n/a |
-| aws | >= 3.0 |
+| <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.0 |
 
 ## Modules
 
-No Modules.
+No modules.
 
 ## Resources
 
-| Name |
-|------|
-| [archive_file](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) |
-| [aws_cloudwatch_log_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) |
-| [aws_iam_policy_document](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) |
-| [aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) |
-| [aws_iam_role_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) |
-| [aws_lambda_function](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) |
+| Name | Type |
+|------|------|
+| [aws_cloudwatch_log_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_iam_role.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_lambda_function.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
+| [archive_file.main](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [aws_iam_policy_document.lambda_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| app\_name | Name of the application the Lambda is associated with. | `string` | n/a | yes |
-| environment | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
-| image\_uri | (Optional) The ECR image URI containing the function's deployment package. | `string` | `null` | no |
-| logs\_retention | Number of days to retain lambda events. | `string` | `"365"` | no |
-| package\_type | (Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. | `string` | `"Zip"` | no |
-| publish | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
-| task\_execution\_role\_arns | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
-| task\_role\_arns | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |
-| timeout | How long a lambda call can execute before it is timed out, in seconds. | `number` | `120` | no |
+| <a name="input_app_name"></a> [app\_name](#input\_app\_name) | Name of the application the Lambda is associated with. | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Name of the environment the Lambda is deployed into. | `string` | n/a | yes |
+| <a name="input_image_uri"></a> [image\_uri](#input\_image\_uri) | (Optional) The ECR image URI containing the function's deployment package. | `string` | `null` | no |
+| <a name="input_logs_retention"></a> [logs\_retention](#input\_logs\_retention) | Number of days to retain lambda events. | `string` | `"365"` | no |
+| <a name="input_package_type"></a> [package\_type](#input\_package\_type) | (Optional) The Lambda deployment package type. Valid values are `Zip` and `Image`. | `string` | `"Zip"` | no |
+| <a name="input_publish"></a> [publish](#input\_publish) | Whether to publish creation/change as new Lambda Function Version. | `bool` | `false` | no |
+| <a name="input_task_execution_role_arns"></a> [task\_execution\_role\_arns](#input\_task\_execution\_role\_arns) | ARN of the task execution role the Amazon ECS container agent and Docker daemon can assume. | `list(string)` | n/a | yes |
+| <a name="input_task_role_arns"></a> [task\_role\_arns](#input\_task\_role\_arns) | ARNs of the IAM roles assumed by Amazon ECS container tasks. | `list(string)` | n/a | yes |
+| <a name="input_timeout"></a> [timeout](#input\_timeout) | How long a lambda call can execute before it is timed out, in seconds. | `number` | `120` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| iam\_role\_name | Name of the IAM role the lambda assumes. |
-| lambda\_function\_arn | ARN of the lambda function. |
-| last\_modified | The date this resource was last modified. |
-| log\_group | CloudWatch log group the lambda logs to. |
-| name | Name of the lambda function. |
-| qualified\_arn | The Amazon Resource Name (ARN) identifying your Lambda Function Version (if versioning is enabled via publish = true). |
-| source\_code\_hash | Base64-encoded representation of raw SHA-256 sum of the zip file. |
-| source\_code\_size | The size in bytes of the function .zip file. |
-| version | Published version of the lambda function. |
-
+| <a name="output_iam_role_name"></a> [iam\_role\_name](#output\_iam\_role\_name) | Name of the IAM role the lambda assumes. |
+| <a name="output_lambda_function_arn"></a> [lambda\_function\_arn](#output\_lambda\_function\_arn) | ARN of the lambda function. |
+| <a name="output_last_modified"></a> [last\_modified](#output\_last\_modified) | The date this resource was last modified. |
+| <a name="output_log_group"></a> [log\_group](#output\_log\_group) | CloudWatch log group the lambda logs to. |
+| <a name="output_name"></a> [name](#output\_name) | Name of the lambda function. |
+| <a name="output_qualified_arn"></a> [qualified\_arn](#output\_qualified\_arn) | The Amazon Resource Name (ARN) identifying your Lambda Function Version (if versioning is enabled via publish = true). |
+| <a name="output_source_code_hash"></a> [source\_code\_hash](#output\_source\_code\_hash) | Base64-encoded representation of raw SHA-256 sum of the zip file. |
+| <a name="output_source_code_size"></a> [source\_code\_size](#output\_source\_code\_size) | The size in bytes of the function .zip file. |
+| <a name="output_version"></a> [version](#output\_version) | Published version of the lambda function. |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Invoking the lambda
@@ -171,12 +171,8 @@ ecs-manager can add (or remove) secrets in an ECS task definition. Using the
     "command": "deploy",
     "body": {
         "cluster_id": "app-cluster",
-        "service_ids": [
-            "app-service1"
-        ],
-        "secrets": [
-            "^/app-service1/secrets/\\S+$"
-        ]
+        "service_ids": ["app-service1"],
+        "secrets": ["^/app-service1/secrets/\\S+$"]
     }
 }
 ```
@@ -211,8 +207,8 @@ Will appear in the task definition like so:
 For more information, see [Tagging SSM documents], and the [Amazon ECS Developer
 Guide] on _Specifying Sensitive Data Using Systems Manager Parameter Store_.
 
-[Tagging SSM Documents]: https://docs.aws.amazon.com/systems-manager/latest/userguide/tagging-documents.html
-[Amazon ECS Developer Guide]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
+[tagging ssm documents]: https://docs.aws.amazon.com/systems-manager/latest/userguide/tagging-documents.html
+[amazon ecs developer guide]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-parameters.html
 
 ## Development
 
