@@ -41,7 +41,7 @@ module "lambda_ecs_manager" {
 | Name | Version |
 |------|---------|
 | archive | n/a |
-| aws | > 3.0 |
+| aws | >= 3.0 |
 
 ## Modules
 
