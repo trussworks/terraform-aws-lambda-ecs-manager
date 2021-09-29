@@ -1,4 +1,4 @@
-FROM amazon/aws-lambda-python:3
+FROM amazon/aws-lambda-python:3.9.2021.09.13.12
 
 ARG MANAGER_VERSION="2.3.0"
 
